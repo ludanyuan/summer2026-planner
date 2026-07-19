@@ -1,942 +1,2516 @@
-<!doctype html>
-<html lang="zh-CN">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>夏 2026</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg:#0f0f13; --surface:#1a1a24; --hi:#22222f; --accent:#c9a96e;
-      --accent2:#7eb8a4; --accent3:#b08dd1; --text:#e8e6e0; --muted:#9896a0;
-      --dim:#5a5868; --border:#2e2d3a; --success:#72b288;
-    }
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      background: radial-gradient(circle at top left, rgba(201,169,110,.10), transparent 34rem), var(--bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, sans-serif;
-      line-height: 1.5;
-    }
-    h1,h2,h3,.serif { font-family: "Playfair Display", Georgia, serif; letter-spacing: .01em; }
-    h1,h2,h3,p { margin-top: 0; }
-    button,input,textarea,select { font: inherit; }
-    button, .project-card, .day-cell, summary, .pill.clickable { cursor: pointer; }
-    .num,.date { font-family: "Courier New", monospace; }
-    .app-header {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 30;
-      height: 60px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px;
-      align-items: center; padding: 8px clamp(14px, 4vw, 34px);
-      background: rgba(15,15,19,.92); border-bottom: 1px solid var(--border); backdrop-filter: blur(14px);
-    }
-    .brand h1 { margin: 0; color: var(--accent); font-size: 24px; line-height: 1; }
-    .brand small { color: var(--muted); font-size: 12px; }
-    .day-status { text-align: center; color: var(--muted); }
-    .save-badge { justify-self: end; opacity: 0; color: var(--accent2); transition: opacity .25s; }
-    .save-badge.show { opacity: 1; }
-    .tabs {
-      position: sticky; top: 60px; z-index: 25;
-      display: flex; gap: 18px; overflow-x: auto; white-space: nowrap;
-      padding: 0 clamp(14px, 4vw, 34px);
-      background: rgba(15,15,19,.92); border-bottom: 1px solid var(--border);
-    }
-    .tab {
-      flex: 0 0 auto; border: 0; border-bottom: 2px solid transparent;
-      background: transparent; color: var(--muted); padding: 13px 0 11px;
-      transition: color .15s, border-color .15s;
-    }
-    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-    main { max-width: 960px; margin: 0 auto; padding: 108px 24px 56px; }
-    .view { animation: fade .15s ease; }
-    @keyframes fade { from { opacity: .35; transform: translateY(3px); } to { opacity: 1; transform: none; } }
-    .card,.panel {
-      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-      box-shadow: 0 2px 16px rgba(0,0,0,.4); padding: 16px;
-      transition: border-color .15s, transform .15s, box-shadow .15s;
-    }
-    .card:hover,.project-card:hover { border-color: rgba(201,169,110,.4); transform: translateY(-1px); }
-    .gold-glow { box-shadow: 0 0 0 1px rgba(201,169,110,.25), 0 0 28px rgba(201,169,110,.10); }
-    .grid { display: grid; gap: 16px; }
-    .g2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
-    .g3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
-    .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-    .muted { color: var(--muted); }
-    .dim { color: var(--dim); }
-    .btn {
-      border: 1px solid var(--accent); background: transparent; color: var(--accent);
-      border-radius: 5px; padding: 7px 10px; transition: background .15s, color .15s, opacity .15s;
-    }
-    .btn:hover:not(:disabled) { background: var(--accent); color: var(--bg); }
-    .btn:disabled { opacity: .4; cursor: not-allowed; }
-    .btn.danger { border-color: #c47b7b; color: #c47b7b; }
-    input,textarea,select {
-      width: 100%; background: var(--hi); border: 1px solid var(--border); color: var(--text);
-      border-radius: 5px; padding: 8px 9px; outline: none;
-    }
-    textarea { resize: vertical; min-height: 82px; }
-    input:focus,textarea:focus,select:focus { border-color: var(--accent); }
-    .field { display: grid; gap: 5px; }
-    .field label { color: var(--muted); font-size: .84rem; }
-    .form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
-    .progress { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
-    .progress span { display: block; height: 100%; background: var(--accent); border-radius: 3px; width: 0; }
-    .pill {
-      display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px;
-      background: var(--hi); border: 1px solid var(--border); border-radius: 12px;
-      color: var(--muted); font-size: .82rem;
-    }
-    .pill.good { color: var(--success); border-color: rgba(114,178,136,.45); }
-    .tag { color: var(--accent); }
-    .check { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); cursor: pointer; }
-    .check input { display: none; }
-    .check .box {
-      width: 16px; height: 16px; flex: 0 0 auto; display: inline-grid; place-items: center;
-      background: var(--hi); border: 1px solid var(--border); border-radius: 2px;
-    }
-    .check input:checked + .box { border-color: var(--accent); background: rgba(201,169,110,.12); }
-    .check input:checked + .box:after { content: "✓"; color: var(--accent); font-weight: 800; font-size: .86rem; }
-    .checks { display: flex; gap: 12px; flex-wrap: wrap; }
-    .quote { text-align: center; color: var(--accent); font-style: italic; font-size: 1.28rem; }
-    .project-card { min-height: 132px; }
-    .stage-row { position: relative; display: grid; grid-template-columns: repeat(7,1fr); gap: 8px; margin: 18px 0; }
-    .stage-line { position: absolute; left: 7%; right: 7%; top: 17px; height: 2px; background: var(--border); }
-    .stage-line span { display: block; height: 100%; background: var(--accent); }
-    .stage-node {
-      position: relative; z-index: 2; width: 34px; height: 34px; margin: auto; border-radius: 50%;
-      border: 1px solid var(--dim); color: var(--dim); background: var(--surface); display: grid; place-items: center;
-    }
-    .stage-node.mid { border-color: var(--accent); background: rgba(201,169,110,.18); color: var(--accent); }
-    .stage-node.done { border-color: var(--accent2); background: rgba(126,184,164,.2); color: var(--accent2); }
-    .stage-labels { display: grid; grid-template-columns: repeat(7,1fr); gap: 8px; color: var(--muted); font-size: .78rem; text-align: center; }
-    .book-dot { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--border); }
-    .week-block { overflow-x: auto; }
-    .week-head { display: grid; grid-template-columns: 230px 1fr; gap: 12px; align-items: center; background: var(--hi); padding: 10px; border-radius: 8px; margin-bottom: 10px; }
-    .assignment-table { width: 100%; border-collapse: collapse; min-width: 920px; }
-    .assignment-table th,.assignment-table td { border-bottom: 1px solid var(--border); padding: 7px; vertical-align: middle; }
-    .assignment-table th { color: var(--muted); font-size: .8rem; font-weight: 500; text-align: left; }
-    .calendar-month h3 { color: var(--accent); }
-    .calendar { display: grid; grid-template-columns: repeat(7,1fr); gap: 7px; }
-    .dow { text-align: center; color: var(--dim); font-size: .76rem; }
-    .day-cell {
-      min-height: 85px; border: 1px solid var(--border); border-radius: 8px; background: #14141d;
-      padding: 7px; display: grid; place-items: center; transition: background .15s, border-color .15s;
-    }
-    .day-cell .n { justify-self: start; align-self: start; color: var(--muted); font-size: .78rem; }
-    .day-cell.done { background: rgba(201,169,110,.16); border-color: rgba(201,169,110,.55); }
-    .day-cell.today { box-shadow: 0 0 0 2px rgba(201,169,110,.55); }
-    .day-cell.off { opacity: .22; cursor: not-allowed; }
-    .day-cell.future { background: #181824; }
-    .emoji { font-size: 1.65rem; }
-    .burst { position: fixed; z-index: 60; pointer-events: none; animation: burst 900ms ease forwards; }
-    @keyframes burst { to { opacity: 0; transform: translateY(-66px); } }
-    .milestone { position: fixed; left: 50%; top: 96px; transform: translateX(-50%); z-index: 70; background: var(--hi); border: 1px solid var(--accent); color: var(--accent); border-radius: 999px; padding: 9px 14px; animation: slide 1800ms ease forwards; }
-    @keyframes slide { 0% { opacity: 0; transform: translate(-50%,-12px); } 15%,75% { opacity:1; transform:translate(-50%,0); } 100% { opacity:0; transform:translate(-50%,-12px); } }
-    .saved-float { position: fixed; right: 18px; top: 72px; background: var(--hi); color: var(--accent2); border: 1px solid rgba(126,184,164,.4); border-radius: 999px; padding: 7px 11px; opacity: 0; transition: opacity .25s; z-index: 80; }
-    .saved-float.show { opacity: 1; }
-    .hidden { display: none !important; }
-    .trunc { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-    .tools { display:flex; gap:8px; justify-content:flex-end; margin-bottom:14px; }
-    @media (max-width: 760px) {
-      .app-header { grid-template-columns: 1fr; height: auto; align-items: start; }
-      .day-status { text-align: left; }
-      .save-badge { justify-self: start; }
-      .tabs { top: 104px; }
-      main { padding-top: 156px; padding-inline: 14px; }
-      .g2,.g3,.form-grid { grid-template-columns: 1fr; }
-      .week-head { grid-template-columns: 1fr; }
-      .calendar { grid-template-columns: repeat(7, minmax(42px,1fr)); }
-      .day-cell { min-height: 64px; }
-    }
-    @media print {
-      body { background: white; color: black; }
-      .app-header,.tabs,.tools,.btn { display: none !important; }
-      main { max-width: none; padding: 0; }
-      .card,.panel { background: white; color: black; border: 1px solid #999; box-shadow: none; }
-      .view:not([data-active-tab="0"]) { display: none; }
-      .progress span { background: #333; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>夏 2026 — Summer Plan Tracker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪼</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0a121d;
+  --surface:  #121e2e;
+  --hi:       #1b2c40;
+  --accent:   #8fe0e6;
+  --accent2:  #f0a8cf;
+  --accent3:  #b3a8f0;
+  --text:     #e8f2f7;
+  --muted:    #93acc2;
+  --dim:      #4f6781;
+  --border:   #23304a;
+  --success:  #93e0c8;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.mono { font-family: 'Courier New', monospace; }
+a { color: var(--accent); }
+
+/* ===== Header ===== */
+#app-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 60px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 100;
+}
+#app-header .header-left { display: flex; flex-direction: column; line-height: 1.2; }
+#app-header .header-left .title {
+  font-family: 'Playfair Display', Georgia, serif; font-size: 25px; color: var(--accent);
+  text-shadow: 0 0 16px rgba(143, 224, 230, 0.45);
+  display: inline-block;
+  animation: jellyDrift 7s ease-in-out infinite;
+}
+@keyframes jellyDrift {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-3px) rotate(-1deg); }
+}
+#app-header .header-left .subtitle { font-size: 13px; color: var(--muted); font-family: 'Courier New', monospace; }
+#app-header .header-center { font-family: 'Courier New', monospace; font-size: 15px; color: var(--text); white-space: nowrap; }
+#app-header .header-right { min-width: 80px; text-align: right; }
+#saved-badge {
+  display: inline-block;
+  font-size: 14px;
+  color: var(--success);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+#saved-badge.show { opacity: 1; }
+
+/* ===== Tab bar ===== */
+#tab-bar {
+  position: sticky;
+  top: 60px;
+  z-index: 90;
+  display: flex;
+  overflow-x: auto;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  margin-top: 60px;
+  scrollbar-width: thin;
+}
+#tab-bar::-webkit-scrollbar { height: 4px; }
+#tab-bar::-webkit-scrollbar-thumb { background: var(--border); }
+.tab-btn {
+  flex: 0 0 auto;
+  padding: 14px 18px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: 15px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.tab-btn:hover { color: var(--text); background: none; }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); text-shadow: 0 0 10px rgba(143, 224, 230, 0.5); }
+
+/* ===== Content ===== */
+#content-area { max-width: 960px; margin: 0 auto; padding: 24px; }
+#tab-content { opacity: 1; transition: opacity 0.15s ease; }
+#tab-content.fading { opacity: 0; }
+
+/* ===== Generic components ===== */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.card:hover { border-color: rgba(143, 224, 230, 0.4); transform: translateY(-1px); }
+.card.glow { box-shadow: 0 0 18px rgba(143, 224, 230, 0.35); border-color: var(--accent); }
+
+.section-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 21px;
+  margin: 28px 0 14px 0;
+  color: var(--text);
+}
+.section-title:first-child { margin-top: 0; }
+
+input[type="text"], input[type="number"], input[type="date"], textarea, select {
+  background: var(--hi);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+input[type="text"]:focus, input[type="number"]:focus, input[type="date"]:focus,
+textarea:focus, select:focus { border-color: var(--accent); outline: none; }
+textarea { resize: vertical; width: 100%; font-family: inherit; line-height: 1.5; }
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239896a0'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+  cursor: pointer;
+}
+
+button, .btn {
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+button:hover, .btn:hover { background: var(--accent); color: var(--bg); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+button:disabled:hover { background: transparent; color: var(--accent); }
+button.btn-ghost { border-color: var(--border); color: var(--muted); }
+button.btn-ghost:hover { background: var(--hi); color: var(--text); border-color: var(--border); }
+button.btn-danger { border-color: #c97070; color: #c97070; }
+button.btn-danger:hover { background: #c97070; color: var(--bg); }
+button.btn-sm { padding: 4px 9px; font-size: 13px; }
+
+/* checkboxes */
+.cb { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; font-size: 14px; color: var(--text); }
+.cb-box {
+  width: 16px; height: 16px;
+  background: var(--hi);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 16px;
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: bold;
+}
+.cb input { display: none; }
+.cb input:checked + .cb-box::after { content: "✓"; }
+.cb input:checked + .cb-box { border-color: var(--accent); }
+
+/* progress bar */
+.progress-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; width: 100%; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s ease; }
+
+/* pills / tags */
+.pill { display: inline-block; font-size: 13px; background: var(--hi); border-radius: 12px; padding: 2px 10px; color: var(--text); border: 1px solid var(--border); }
+.pill.pill-amber { color: var(--accent); border-color: rgba(143,224,230,0.4); }
+.pill.pill-teal { color: var(--accent2); border-color: rgba(240,168,207,0.4); }
+.pill.pill-lavender { color: var(--accent3); border-color: rgba(179,168,240,0.4); }
+.pill.pill-green { background: rgba(147,224,200,0.18); color: var(--success); border-color: rgba(147,224,200,0.3);}
+.pill.pill-gray { background: var(--hi); color: var(--dim); }
+
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; background: var(--hi); border-radius: 12px; padding: 2px 10px; color: var(--muted); border: 1px solid var(--border); cursor: pointer; }
+.chip .chip-x { color: var(--dim); }
+.chip:hover .chip-x { color: #c97070; }
+
+/* layout helpers */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.row { display: flex; align-items: center; gap: 10px; }
+.row.wrap { flex-wrap: wrap; }
+.col { display: flex; flex-direction: column; gap: 8px; }
+.spacer { flex: 1; }
+.muted { color: var(--muted); }
+.dim { color: var(--dim); }
+.small { font-size: 13px; }
+.mt8 { margin-top: 8px; } .mt12 { margin-top: 12px; } .mt16 { margin-top: 16px; } .mt24 { margin-top: 24px; }
+.mb8 { margin-bottom: 8px; }
+hr.sep { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+@media (max-width: 720px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  #app-header .header-center { display: none; }
+  #content-area { padding: 16px; }
+}
+
+/* ===== Overview ===== */
+.overview-progress-label { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); margin-bottom: 6px; font-family: 'Courier New', monospace; }
+.project-card { cursor: pointer; display: flex; flex-direction: column; gap: 6px; }
+.project-card .pc-head { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 600; }
+.project-card .pc-icon { font-size: 23px; }
+.project-card .pc-metric { font-family: 'Courier New', monospace; font-size: 14px; color: var(--accent); }
+.project-card .pc-desc { font-size: 14px; color: var(--muted); }
+/* ===== EP ===== */
+.ep-top-grid { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: start; }
+.ep-title-input { font-family: 'Playfair Display', Georgia, serif; font-size: 23px; width: 100%; padding: 10px 12px; }
+.ep-overall-badge {
+  font-family: 'Courier New', monospace;
+  font-size: 23px;
+  color: var(--accent);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 20px;
+  text-align: center;
+  white-space: nowrap;
+}
+.ep-overall-badge .lbl { font-size: 12px; color: var(--muted); display:block; margin-bottom: 4px; }
+
+.track-card { margin-top: 14px; }
+.track-card .tc-header { display: flex; align-items: center; gap: 10px; }
+.track-card .tc-name {
+  font-size: 16px; font-weight: 600; flex: 1;
+  background: transparent; border: 1px solid transparent;
+  padding: 6px 8px; border-radius: 6px;
+}
+.track-card .tc-name:hover, .track-card .tc-name:focus { border-color: var(--border); background: var(--hi); }
+.tc-collapse-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 17px; padding: 2px 6px; }
+.tc-body { margin-top: 14px; }
+
+.stage-pipeline { display: flex; align-items: center; position: relative; padding: 6px 0; }
+.stage-node-wrap { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; }
+.stage-connector { position: absolute; top: 14px; left: -50%; width: 100%; height: 2px; background: var(--border); z-index: 0; }
+.stage-connector.filled { background: var(--accent); }
+.stage-node-wrap:first-child .stage-connector { display: none; }
+.stage-node {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; cursor: pointer; position: relative; z-index: 1;
+  border: 2px solid var(--dim); color: var(--dim); background: var(--surface);
+  transition: all 0.15s ease;
+}
+.stage-node.in-progress { border-color: var(--accent); background: rgba(143,224,230,0.35); color: var(--accent); }
+.stage-node.done { border-color: var(--accent2); background: var(--accent2); color: var(--bg); }
+.stage-label { font-size: 12px; color: var(--muted); margin-top: 6px; text-align: center; }
+.tc-notes-input { width: 100%; margin-top: 12px; }
+.checklist-box .cb { display: flex; padding: 6px 0; }
+
+/* ===== Reading ===== */
+.book-card { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.book-row-inputs { display: flex; gap: 8px; flex-wrap: wrap; }
+.book-row-inputs input[type="text"] { flex: 1; min-width: 120px; }
+.book-row-inputs input.title-input { flex: 1.6; }
+.book-row-inputs input.year-input { flex: 0 0 70px; min-width: 0; }
+.book-progress-row { display: flex; align-items: center; gap: 10px; }
+.book-progress-row input[type="number"] { width: 70px; }
+.collapsible-toggle { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 2px 0; text-align: left; }
+.collapsible-toggle:hover { color: var(--accent); background: none; }
+.streak-banner { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; font-size: 16px; }
+
+/* ===== Work ===== */
+.today-panel textarea { min-height: 72px; }
+.emoji-burst { position: relative; }
+.emoji-pop { position: absolute; font-size: 19px; animation: floatUp 1.1s ease-out forwards; pointer-events: none; }
+@keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-40px); opacity: 0; } }
+.work-history-card { margin-top: 10px; cursor: pointer; }
+.work-history-card .wh-summary { font-size: 14px; color: var(--muted); margin-top: 6px; white-space: pre-wrap; }
+.work-history-card .wh-summary.truncated { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* ===== Orchestration ===== */
+.orch-header-bar {
+  font-family: 'Courier New', monospace;
+  font-size: 15px; color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 16px;
+}
+.week-block { margin-top: 18px; }
+.week-head-bar {
+  background: var(--hi); border: 1px solid var(--border);
+  border-radius: 8px 8px 0 0; padding: 12px 16px;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.week-head-bar .wk-label { font-family: 'Courier New', monospace; font-size: 14px; color: var(--accent); white-space: nowrap; }
+.week-head-bar input[type="text"] { flex: 1; min-width: 160px; }
+.week-table-wrap { border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; overflow-x: auto; background: var(--surface); }
+table.assign-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 760px; }
+table.assign-table th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 500; padding: 8px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+table.assign-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+table.assign-table tr:last-child td { border-bottom: none; }
+table.assign-table input[type="text"], table.assign-table input[type="date"], table.assign-table select { width: 100%; padding: 6px 8px; font-size: 13px; }
+table.assign-table textarea.a-desc {
+  width: 100%; padding: 6px 8px; font-size: 13px; line-height: 1.4;
+  resize: none; overflow: hidden; min-height: 30px;
+}
+.col-num { width: 28px; text-align: center; color: var(--dim); font-family: 'Courier New', monospace; }
+.col-desc { width: 62%; }
+.col-status { width: 16%; }
+.col-del { width: 36px; text-align: center; }
+.col-cb { text-align: center; width: 36px; }
+.col-drag { width: 28px; text-align: center; }
+.drag-handle { cursor: grab; color: var(--dim); font-size: 16px; user-select: none; }
+.drag-handle:hover { color: var(--accent); }
+.assign-table tbody tr.dragging { opacity: 0.4; }
+.assign-table tbody tr.drag-over { box-shadow: inset 0 2px 0 var(--accent); }
+.assign-table tbody tr { cursor: default; }
+.week-footer { padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; }
+.course-notes textarea { min-height: 140px; }
+
+/* ===== Piano ===== */
+.piano-stats-bar {
+  display: flex; flex-wrap: wrap; gap: 18px; align-items: center;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 18px;
+  font-family: 'Courier New', monospace; font-size: 15px;
+}
+.month-block { margin-top: 24px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 10px; }
+.cal-dow { font-size: 12px; color: var(--muted); text-align: center; padding-bottom: 4px; }
+.cal-cell {
+  height: 85px; min-width: 0;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); position: relative; cursor: pointer;
+  display: flex; flex-direction: column; padding: 6px;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+.cal-cell:hover { transform: translateY(-1px); }
+.cal-cell.empty { background: transparent; border: none; cursor: default; }
+.cal-cell.outside { color: var(--dim); cursor: default; opacity: 0.4; }
+.cal-cell.future { opacity: 0.75; }
+.cal-cell.practiced { background: rgba(143,224,230,0.22); border-color: rgba(143,224,230,0.5); }
+.cal-cell.today { border: 2px solid var(--accent); }
+.cal-daynum { font-size: 12px; color: var(--muted); font-family: 'Courier New', monospace; }
+.cal-emoji-row { flex: 1; display: flex; gap: 4px; }
+.cal-emoji-half {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  font-size: 21px; border-radius: 6px; cursor: pointer;
+  opacity: 0.25; filter: grayscale(1);
+  transition: opacity 0.15s ease, filter 0.15s ease, background 0.15s ease;
+}
+.cal-emoji-half:hover { opacity: 0.6; }
+.cal-emoji-half.active { opacity: 1; filter: none; }
+.cal-emoji-half.piano.active { background: rgba(143,224,230,0.22); }
+.cal-emoji-half.exercise.active { background: rgba(240,168,207,0.22); }
+.cal-cell.outside .cal-emoji-half { cursor: default; pointer-events: none; }
+.milestone-banner {
+  position: fixed; top: 70px; left: 50%;
+  transform: translate(-50%, -120%);
+  opacity: 0;
+  background: var(--accent); color: var(--bg);
+  padding: 10px 22px; border-radius: 8px; font-weight: 600;
+  z-index: 200; transition: transform 0.4s ease, opacity 0.4s ease;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+}
+.milestone-banner.show { transform: translate(-50%, 0); opacity: 1; }
+
+.back-to-top {
+  position: fixed; right: 24px; bottom: 24px;
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 22px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  z-index: 150;
+  opacity: 0; transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease, border-color 0.2s ease;
+}
+.back-to-top.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.back-to-top:hover { border-color: var(--accent); }
+
+/* ===== Composition ===== */
+.piece-card { margin-top: 14px; }
+.piece-card .pc-header-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.piece-title-input { font-family: 'Playfair Display', Georgia, serif; font-size: 19px; flex: 1; min-width: 160px; padding: 8px 10px; }
+.piece-instr-input { flex: 1; min-width: 140px; }
+.task-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.task-row input[type="text"] { flex: 1; background: transparent; border: 1px solid transparent; padding: 6px 8px; }
+.task-row input[type="text"]:hover, .task-row input[type="text"]:focus { background: var(--hi); border-color: var(--border); }
+.task-row.done input[type="text"] { text-decoration: line-through; color: var(--dim); }
+.task-row.dragging { opacity: 0.4; }
+.task-row.drag-over { box-shadow: inset 0 2px 0 var(--accent); }
+
+/* ===== Study ===== */
+.study-section-head { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+.study-work-card { margin-top: 12px; }
+.study-stepper { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.study-stepper button { padding: 4px 10px; font-size: 13px; }
+
+/* ===== Future ===== */
+.future-section { margin-top: 24px; }
+.future-section .fs-head { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+.explore-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.explore-row input[type="text"] { flex: 1; }
+.episode-card { padding: 12px; }
+.episode-card input[type="text"] { width: 100%; }
+table.hours-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
+table.hours-table th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+table.hours-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); }
+table.hours-table input[type="number"] { width: 70px; }
+table.hours-table input[type="text"] { width: 100%; }
+.autogrow { overflow: hidden; }
+</style>
 </head>
 <body>
-  <header class="app-header">
-    <div class="brand"><h1>夏 2026</h1><small>Jun 8 – Sep 1</small></div>
-    <div id="dayStatus" class="day-status num"></div>
-    <div id="savedTop" class="save-badge">saved ✓</div>
-  </header>
-  <nav id="tabBar" class="tabs"></nav>
-  <main>
-    <div class="tools">
-      <button class="btn" id="exportBtn">Export JSON</button>
-      <label class="btn">Import JSON<input id="importFile" type="file" accept="application/json" hidden></label>
-      <button class="btn danger" id="resetBtn">Reset</button>
+
+<header id="app-header">
+  <div class="header-left">
+    <span class="title">夏 2026</span>
+    <span class="subtitle">Jun 8 – Sep 1</span>
+  </div>
+  <div class="header-center" id="header-center"></div>
+  <div class="header-right">
+    <span id="saved-badge">saved ✓</span>
+  </div>
+</header>
+
+<nav id="tab-bar"></nav>
+
+<div id="content-area">
+  <div id="tab-content"></div>
+</div>
+
+<div id="milestone-banner" class="milestone-banner"></div>
+
+<button id="back-to-top" class="back-to-top" type="button" title="Back to top" aria-label="Back to top">🪼</button>
+
+<script>
+// ============================================================
+// summer2026 tracker — application script
+// ============================================================
+
+// ---------- Constants ----------
+const STORAGE_KEY = 'summer2026';
+
+const SUMMER_START = new Date(2026, 5, 8);   // Jun 8, 2026
+const SUMMER_END   = new Date(2026, 8, 1);   // Sep 1, 2026
+const SUMMER_TOTAL_DAYS = 86;
+
+const STAGE_NAMES = ['想法','设计','作曲','录音','编曲','混音','母带'];
+
+const EP_STATUS_OPTIONS = ['🌱 Pre-production', '🎬 In Production', '🎛 Post-production', '✅ Done'];
+const ASSIGN_STATUS_OPTIONS = ['○ Not Started', '→ In Progress', '✓ Done'];
+const COMP_STATUS_OPTIONS = ['○ Sketching', '→ In Progress', '✓ Revising', '🎙 Ready to Record', '✅ Complete'];
+const STUDY_STATUS_OPTIONS = ['○ Not Started', '👂 Listening', '🔍 Analyzing', '📝 Notes Written', '✅ Complete'];
+const VR_STATUS_OPTIONS = ['○ Not Started', '📖 Reading', '🔬 Researching', '📝 Writing'];
+const BLOG_STATUS_OPTIONS = ['💭 Just an idea', '📋 Planning', '🚀 In Progress'];
+const STUDY_PILL_CLASSES = ['pill-amber', 'pill-teal', 'pill-lavender', 'pill-green', 'pill-gray'];
+const STUDY_SECTION_COLORS = ['var(--accent)', 'var(--accent2)', 'var(--accent3)'];
+
+const SATURDAY_DATES = [
+  '2026-06-13','2026-06-20','2026-07-04','2026-07-11','2026-07-18',
+  '2026-07-25','2026-08-01','2026-08-08','2026-08-15','2026-08-22',
+  '2026-08-29','2026-09-05'
+];
+
+
+const EMOJI_POOL = ['🌟','✨','🎹','🌸','🎶','🌈','🍀','💫','🎵','🌙','🦋','🍁','🎀','🌻','🪐'];
+
+const TAB_NAMES = ['总览','EP','影视书籍','工作','管弦乐课','Practice','作曲','作曲家','未来'];
+const TAB_ICONS = ['🗂️','🎧','📚','💼','🎻','🎹','✍️','🎼','🔭'];
+
+// base64-encoded standalone phase0.html, rendered inside the EP tab via an isolated iframe
+const PHASE0_HTML_B64 = "PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9InpoIj4KPGhlYWQ+CjxtZXRhIGNoYXJzZXQ9IlVURi04Ij4KPG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCwgaW5pdGlhbC1zY2FsZT0xLjAiPgo8dGl0bGU+UGhhc2UgMCDCtyBFUDwvdGl0bGU+CjxsaW5rIHJlbD0icHJlY29ubmVjdCIgaHJlZj0iaHR0cHM6Ly9mb250cy5nb29nbGVhcGlzLmNvbSI+CjxsaW5rIHJlbD0icHJlY29ubmVjdCIgaHJlZj0iaHR0cHM6Ly9mb250cy5nc3RhdGljLmNvbSIgY3Jvc3NvcmlnaW4+CjxsaW5rIGhyZWY9Imh0dHBzOi8vZm9udHMuZ29vZ2xlYXBpcy5jb20vY3NzMj9mYW1pbHk9SW5zdHJ1bWVudCtTZXJpZjppdGFsQDA7MSZmYW1pbHk9SW50ZXI6d2dodEA0MDA7NTAwOzYwMCZkaXNwbGF5PXN3YXAiIHJlbD0ic3R5bGVzaGVldCI+CjxzdHlsZT4KICA6cm9vdHsKICAgIC0tYmFzZTojMGEwYjEyOwogICAgLS1iYXNlLTI6IzBkMGYxYTsKICAgIC0taW5rOiNmN2Y4ZmM7CiAgICAtLW11dGVkOiNhYWIyZDQ7CiAgICAtLWZhaW50OiM2YjcyOTk7CiAgICAtLWxpbmU6IzFjMjAzMDsKICAgIC0tZ2xvdy1jb29sOiNhOWQ5ZmY7CiAgICAtLWdsb3ctd2FybTojZmZkOWEzOwogICAgLS1nbG93OiNjNGUzZmY7CiAgICAvKiBwcm9ncmVzcyAwLi4xIGRyaXZlcyB0aGUgbHVtaW5hbmNlIG9mIHRoZSB3aG9sZSBwYWdlICovCiAgICAtLWx1bTowOwogIH0KCiAgKntib3gtc2l6aW5nOmJvcmRlci1ib3g7bWFyZ2luOjA7cGFkZGluZzowfQoKICBodG1se3Njcm9sbC1iZWhhdmlvcjpzbW9vdGh9CgogIGJvZHl7CiAgICBmb250LWZhbWlseToiSW50ZXIiLCJQaW5nRmFuZyBTQyIsIkhpcmFnaW5vIFNhbnMgR0IiLCJNaWNyb3NvZnQgWWFIZWkiLHNhbnMtc2VyaWY7CiAgICBjb2xvcjp2YXIoLS1pbmspOwogICAgYmFja2dyb3VuZDp2YXIoLS1iYXNlKTsKICAgIG1pbi1oZWlnaHQ6MTAwdmg7CiAgICBsaW5lLWhlaWdodDoxLjY7CiAgICAtd2Via2l0LWZvbnQtc21vb3RoaW5nOmFudGlhbGlhc2VkOwogICAgcG9zaXRpb246cmVsYXRpdmU7CiAgICBvdmVyZmxvdy14OmhpZGRlbjsKICB9CgogIC8qIHRoZSBncm93aW5nIGxpZ2h0IOKAlCBzaXRzIGJlaGluZCBldmVyeXRoaW5nLCBpbnRlbnNpdHkgdGllZCB0byAtLWx1bSAqLwogIC5hdXJhewogICAgcG9zaXRpb246Zml4ZWQ7CiAgICBpbnNldDowOwogICAgcG9pbnRlci1ldmVudHM6bm9uZTsKICAgIHotaW5kZXg6MDsKICAgIGJhY2tncm91bmQ6CiAgICAgIHJhZGlhbC1ncmFkaWVudCgxMjAlIDgwJSBhdCA1MCUgLTEwJSwKICAgICAgICByZ2JhKDE2OSwyMTcsMjU1LCBjYWxjKDAuMDUgKyB2YXIoLS1sdW0pICogMC4zMCkpIDAlLAogICAgICAgIHJnYmEoMTk2LDIyNywyNTUsIGNhbGMoMC4wMiArIHZhcigtLWx1bSkgKiAwLjEyKSkgMzAlLAogICAgICAgIHRyYW5zcGFyZW50IDYyJSksCiAgICAgIHJhZGlhbC1ncmFkaWVudCg5MCUgNjAlIGF0IDgwJSAxMTAlLAogICAgICAgIHJnYmEoMjU1LDIxNywxNjMsIGNhbGMoMC4wMSArIHZhcigtLWx1bSkgKiAwLjE0KSkgMCUsCiAgICAgICAgdHJhbnNwYXJlbnQgNTUlKTsKICAgIHRyYW5zaXRpb246YmFja2dyb3VuZCAxLjFzIGN1YmljLWJlemllciguMiwuNywuMiwxKTsKICB9CgogIC53cmFwewogICAgcG9zaXRpb246cmVsYXRpdmU7CiAgICB6LWluZGV4OjE7CiAgICBtYXgtd2lkdGg6NzYwcHg7CiAgICBtYXJnaW46MCBhdXRvOwogICAgcGFkZGluZzpjbGFtcCg0OHB4LDh2dywxMTBweCkgY2xhbXAoMjJweCw1dncsNDBweCkgMTIwcHg7CiAgfQoKICAvKiAtLS0tLS0tLS0tIGhlYWRlciAtLS0tLS0tLS0tICovCiAgLmV5ZWJyb3d7CiAgICBmb250LXNpemU6MTJweDsKICAgIGxldHRlci1zcGFjaW5nOi4zNGVtOwogICAgdGV4dC10cmFuc2Zvcm06dXBwZXJjYXNlOwogICAgY29sb3I6dmFyKC0tbXV0ZWQpOwogICAgbWFyZ2luLWJvdHRvbToyNnB4OwogICAgZGlzcGxheTpmbGV4OwogICAgYWxpZ24taXRlbXM6Y2VudGVyOwogICAgZ2FwOjE0cHg7CiAgfQogIC5leWVicm93OjphZnRlcnsKICAgIGNvbnRlbnQ6IiI7CiAgICBmbGV4OjE7CiAgICBoZWlnaHQ6MXB4OwogICAgYmFja2dyb3VuZDpsaW5lYXItZ3JhZGllbnQoOTBkZWcsdmFyKC0tbGluZSksdHJhbnNwYXJlbnQpOwogIH0KCiAgaDF7CiAgICBmb250LWZhbWlseToiSW5zdHJ1bWVudCBTZXJpZiIsc2VyaWY7CiAgICBmb250LXdlaWdodDo0MDA7CiAgICBmb250LXNpemU6Y2xhbXAoNTRweCwxMnZ3LDEwNHB4KTsKICAgIGxpbmUtaGVpZ2h0Oi45MjsKICAgIGxldHRlci1zcGFjaW5nOi0uMDFlbTsKICAgIG1hcmdpbi1ib3R0b206NnB4OwogIH0KICBoMSBlbXsKICAgIGZvbnQtc3R5bGU6aXRhbGljOwogICAgY29sb3I6dHJhbnNwYXJlbnQ7CiAgICBiYWNrZ3JvdW5kOmxpbmVhci1ncmFkaWVudCgxMzVkZWcsdmFyKC0tZ2xvdy1jb29sKSwjZmZmIDUwJSx2YXIoLS1nbG93LXdhcm0pKTsKICAgIC13ZWJraXQtYmFja2dyb3VuZC1jbGlwOnRleHQ7CiAgICBiYWNrZ3JvdW5kLWNsaXA6dGV4dDsKICAgIGZpbHRlcjpkcm9wLXNoYWRvdygwIDAgY2FsYyg4cHggKyB2YXIoLS1sdW0pKjIycHgpIHJnYmEoMTk2LDIyNywyNTUsY2FsYygwLjE1ICsgdmFyKC0tbHVtKSowLjUpKSk7CiAgICB0cmFuc2l0aW9uOmZpbHRlciAxcyBlYXNlOwogIH0KCiAgLnN1YnsKICAgIGNvbG9yOnZhcigtLW11dGVkKTsKICAgIGZvbnQtc2l6ZToxNXB4OwogICAgbWF4LXdpZHRoOjQ2Y2g7CiAgICBtYXJnaW4tdG9wOjE4cHg7CiAgfQogIC5kYXRlc3sKICAgIGZvbnQtZmFtaWx5OiJJbnN0cnVtZW50IFNlcmlmIixzZXJpZjsKICAgIGZvbnQtc3R5bGU6aXRhbGljOwogICAgZm9udC1zaXplOjE5cHg7CiAgICBjb2xvcjp2YXIoLS1nbG93KTsKICAgIG1hcmdpbi10b3A6NHB4OwogIH0KCiAgLyogLS0tLS0tLS0tLSBwcm9ncmVzcyBtZXRlciAtLS0tLS0tLS0tICovCiAgLm1ldGVyewogICAgbWFyZ2luOjQycHggMCAxMnB4OwogICAgZGlzcGxheTpmbGV4OwogICAgYWxpZ24taXRlbXM6YmFzZWxpbmU7CiAgICBnYXA6MTZweDsKICB9CiAgLm1ldGVyIC5jb3VudHsKICAgIGZvbnQtZmFtaWx5OiJJbnN0cnVtZW50IFNlcmlmIixzZXJpZjsKICAgIGZvbnQtc2l6ZTo0NnB4OwogICAgbGluZS1oZWlnaHQ6MTsKICAgIGNvbG9yOnZhcigtLWluayk7CiAgfQogIC5tZXRlciAuY291bnQgYnsKICAgIGNvbG9yOnZhcigtLWdsb3cpOwogICAgZm9udC13ZWlnaHQ6NDAwOwogICAgZmlsdGVyOmRyb3Atc2hhZG93KDAgMCBjYWxjKHZhcigtLWx1bSkqMTZweCkgcmdiYSgxOTYsMjI3LDI1NSxjYWxjKHZhcigtLWx1bSkqMC42KSkpOwogIH0KICAubWV0ZXIgLmxibHsKICAgIGZvbnQtc2l6ZToxMnB4OwogICAgbGV0dGVyLXNwYWNpbmc6LjIyZW07CiAgICB0ZXh0LXRyYW5zZm9ybTp1cHBlcmNhc2U7CiAgICBjb2xvcjp2YXIoLS1mYWludCk7CiAgfQogIC50cmFja3sKICAgIGhlaWdodDoycHg7CiAgICBiYWNrZ3JvdW5kOnZhcigtLWxpbmUpOwogICAgYm9yZGVyLXJhZGl1czoycHg7CiAgICBvdmVyZmxvdzpoaWRkZW47CiAgICBtYXJnaW4tYm90dG9tOjYwcHg7CiAgfQogIC5maWxsewogICAgaGVpZ2h0OjEwMCU7CiAgICB3aWR0aDpjYWxjKHZhcigtLWx1bSkqMTAwJSk7CiAgICBiYWNrZ3JvdW5kOmxpbmVhci1ncmFkaWVudCg5MGRlZyxyZ2JhKDE2OSwyMTcsMjU1LC40KSx2YXIoLS1nbG93KSx2YXIoLS1nbG93LXdhcm0pKTsKICAgIGJveC1zaGFkb3c6MCAwIDE2cHggcmdiYSgxOTYsMjI3LDI1NSwuNik7CiAgICB0cmFuc2l0aW9uOndpZHRoIC43cyBjdWJpYy1iZXppZXIoLjIsLjcsLjIsMSk7CiAgfQoKICAvKiAtLS0tLS0tLS0tIHNlY3Rpb25zIC0tLS0tLS0tLS0gKi8KICAuZ3JvdXB7bWFyZ2luLWJvdHRvbTo1MnB4fQogIC5ncm91cC1oZWFkewogICAgZGlzcGxheTpmbGV4OwogICAgYWxpZ24taXRlbXM6YmFzZWxpbmU7CiAgICBnYXA6MTRweDsKICAgIG1hcmdpbi1ib3R0b206NnB4OwogIH0KICAuZ3JvdXAtbnVtewogICAgZm9udC1mYW1pbHk6Ikluc3RydW1lbnQgU2VyaWYiLHNlcmlmOwogICAgZm9udC1zdHlsZTppdGFsaWM7CiAgICBmb250LXNpemU6MjJweDsKICAgIGNvbG9yOnZhcigtLWZhaW50KTsKICAgIG1pbi13aWR0aDoxLjRlbTsKICB9CiAgLmdyb3VwLXRpdGxlewogICAgZm9udC1zaXplOjE4cHg7CiAgICBmb250LXdlaWdodDo2MDA7CiAgICBsZXR0ZXItc3BhY2luZzouMDFlbTsKICB9CiAgLmdyb3VwLXdoZW57CiAgICBmb250LXNpemU6MTIuNXB4OwogICAgY29sb3I6dmFyKC0tbXV0ZWQpOwogICAgbWFyZ2luOjJweCAwIDIycHggY2FsYygxLjRlbSArIDE0cHgpOwogIH0KCiAgLyogLS0tLS0tLS0tLSBpdGVtcyAtLS0tLS0tLS0tICovCiAgLml0ZW17CiAgICBkaXNwbGF5OmZsZXg7CiAgICBnYXA6MTZweDsKICAgIHBhZGRpbmc6MTVweCAxNnB4IDE1cHggMDsKICAgIGJvcmRlci10b3A6MXB4IHNvbGlkIHZhcigtLWxpbmUpOwogICAgdHJhbnNpdGlvbjpvcGFjaXR5IC40cyBlYXNlOwogICAgYWxpZ24taXRlbXM6ZmxleC1zdGFydDsKICB9CiAgLml0ZW06bGFzdC1jaGlsZHtib3JkZXItYm90dG9tOjFweCBzb2xpZCB2YXIoLS1saW5lKX0KCiAgLmNvdW50ZXJ7CiAgICBmbGV4Om5vbmU7CiAgICBkaXNwbGF5OmZsZXg7CiAgICBhbGlnbi1pdGVtczpjZW50ZXI7CiAgICBnYXA6OHB4OwogICAgbWFyZ2luLXRvcDoxcHg7CiAgfQogIC5jYnRuewogICAgd2lkdGg6MjRweDtoZWlnaHQ6MjRweDsKICAgIGJvcmRlcjoxcHggc29saWQgdmFyKC0tbGluZSk7CiAgICBib3JkZXItcmFkaXVzOjZweDsKICAgIGJhY2tncm91bmQ6bm9uZTsKICAgIGNvbG9yOnZhcigtLW11dGVkKTsKICAgIGZvbnQtc2l6ZToxNHB4OwogICAgbGluZS1oZWlnaHQ6MTsKICAgIGN1cnNvcjpwb2ludGVyOwogICAgZGlzcGxheTpmbGV4O2FsaWduLWl0ZW1zOmNlbnRlcjtqdXN0aWZ5LWNvbnRlbnQ6Y2VudGVyOwogICAgdHJhbnNpdGlvbjpib3JkZXItY29sb3IgLjJzIGVhc2UsY29sb3IgLjJzIGVhc2U7CiAgfQogIC5jYnRuOmhvdmVye2JvcmRlci1jb2xvcjp2YXIoLS1nbG93KTtjb2xvcjp2YXIoLS1nbG93KX0KICAuY2J0bjpkaXNhYmxlZHtvcGFjaXR5Oi4zO2N1cnNvcjpkZWZhdWx0fQogIC5jYnRuOmRpc2FibGVkOmhvdmVye2JvcmRlci1jb2xvcjp2YXIoLS1saW5lKTtjb2xvcjp2YXIoLS1tdXRlZCl9CiAgLmNudW17CiAgICBtaW4td2lkdGg6MS42ZW07CiAgICB0ZXh0LWFsaWduOmNlbnRlcjsKICAgIGZvbnQtZmFtaWx5OiJJbnN0cnVtZW50IFNlcmlmIixzZXJpZjsKICAgIGZvbnQtc2l6ZToxN3B4OwogICAgY29sb3I6dmFyKC0taW5rKTsKICB9CgogIC5ib3h7CiAgICBmbGV4Om5vbmU7CiAgICB3aWR0aDoyMXB4O2hlaWdodDoyMXB4OwogICAgbWFyZ2luLXRvcDoycHg7CiAgICBib3JkZXI6MS41cHggc29saWQgdmFyKC0tZmFpbnQpOwogICAgYm9yZGVyLXJhZGl1czo2cHg7CiAgICBwb3NpdGlvbjpyZWxhdGl2ZTsKICAgIHRyYW5zaXRpb246Ym9yZGVyLWNvbG9yIC4zcyBlYXNlLCBiYWNrZ3JvdW5kIC4zcyBlYXNlLCBib3gtc2hhZG93IC4zcyBlYXNlOwogIH0KICAuYm94OjphZnRlcnsKICAgIGNvbnRlbnQ6IiI7CiAgICBwb3NpdGlvbjphYnNvbHV0ZTsKICAgIGxlZnQ6Ni41cHg7dG9wOjNweDsKICAgIHdpZHRoOjVweDtoZWlnaHQ6MTBweDsKICAgIGJvcmRlcjpzb2xpZCB2YXIoLS1iYXNlKTsKICAgIGJvcmRlci13aWR0aDowIDJweCAycHggMDsKICAgIHRyYW5zZm9ybTpyb3RhdGUoNDVkZWcpIHNjYWxlKDApOwogICAgdHJhbnNpdGlvbjp0cmFuc2Zvcm0gLjI1cyBjdWJpYy1iZXppZXIoLjMsMS40LC41LDEpOwogIH0KICAudHh0e2ZsZXg6MX0KICAudHh0IC5tYWluewogICAgZm9udC1zaXplOjE1LjVweDsKICAgIGNvbG9yOnZhcigtLWluayk7CiAgICB0cmFuc2l0aW9uOmNvbG9yIC4zNXMgZWFzZTsKICB9CiAgLnR4dCAuaGludHsKICAgIGZvbnQtc2l6ZToxM3B4OwogICAgY29sb3I6dmFyKC0tbXV0ZWQpOwogICAgbWFyZ2luLXRvcDozcHg7CiAgfQogIC50eHQgLmhpbnQgYntjb2xvcjp2YXIoLS1nbG93KTtmb250LXdlaWdodDo1MDB9CgogIC8qIGNoZWNrZWQgc3RhdGUgKi8KICAuaXRlbS5kb25lIC5ib3h7CiAgICBiYWNrZ3JvdW5kOmxpbmVhci1ncmFkaWVudCgxMzVkZWcsdmFyKC0tZ2xvdy1jb29sKSx2YXIoLS1nbG93LXdhcm0pKTsKICAgIGJvcmRlci1jb2xvcjp0cmFuc3BhcmVudDsKICAgIGJveC1zaGFkb3c6MCAwIDE0cHggcmdiYSgxOTYsMjI3LDI1NSwuNTUpOwogIH0KICAuaXRlbS5kb25lIC5ib3g6OmFmdGVye3RyYW5zZm9ybTpyb3RhdGUoNDVkZWcpIHNjYWxlKDEpfQoKICAvKiAtLS0tLS0tLS0tIGRpc2NpcGxpbmUgY2FsbG91dCAtLS0tLS0tLS0tICovCiAgLm5vdGV7CiAgICBtYXJnaW4tdG9wOjE0cHg7CiAgICBwYWRkaW5nOjIycHggMjRweDsKICAgIGJvcmRlci1sZWZ0OjJweCBzb2xpZCB2YXIoLS1nbG93KTsKICAgIGJhY2tncm91bmQ6bGluZWFyLWdyYWRpZW50KDkwZGVnLHJnYmEoMTY5LDIxNywyNTUsLjA1KSx0cmFuc3BhcmVudCk7CiAgICBib3JkZXItcmFkaXVzOjAgMTBweCAxMHB4IDA7CiAgfQogIC5ub3RlIC50YWd7CiAgICBmb250LXNpemU6MTFweDtsZXR0ZXItc3BhY2luZzouMjRlbTt0ZXh0LXRyYW5zZm9ybTp1cHBlcmNhc2U7CiAgICBjb2xvcjp2YXIoLS1nbG93KTttYXJnaW4tYm90dG9tOjhweDsKICB9CiAgLm5vdGUgcHtmb250LXNpemU6MTQuNXB4O2NvbG9yOnZhcigtLWluayl9CgogIC8qIC0tLS0tLS0tLS0gZW5kIHN0YXRlIC0tLS0tLS0tLS0gKi8KICAuZW5kewogICAgbWFyZ2luLXRvcDo2NHB4OwogICAgcGFkZGluZy10b3A6MzRweDsKICAgIGJvcmRlci10b3A6MXB4IHNvbGlkIHZhcigtLWxpbmUpOwogIH0KICAuZW5kIGgyewogICAgZm9udC1mYW1pbHk6Ikluc3RydW1lbnQgU2VyaWYiLHNlcmlmOwogICAgZm9udC1zdHlsZTppdGFsaWM7CiAgICBmb250LXdlaWdodDo0MDA7CiAgICBmb250LXNpemU6MjZweDsKICAgIG1hcmdpbi1ib3R0b206MThweDsKICAgIGNvbG9yOnZhcigtLWluayk7CiAgfQogIC5lbmQgdWx7bGlzdC1zdHlsZTpub25lfQogIC5lbmQgbGl7CiAgICBmb250LXNpemU6MTQuNXB4OwogICAgY29sb3I6dmFyKC0tbXV0ZWQpOwogICAgcGFkZGluZzo3cHggMCA3cHggMjZweDsKICAgIHBvc2l0aW9uOnJlbGF0aXZlOwogIH0KICAuZW5kIGxpOjpiZWZvcmV7CiAgICBjb250ZW50OiIiOwogICAgcG9zaXRpb246YWJzb2x1dGU7bGVmdDoycHg7dG9wOjE0cHg7CiAgICB3aWR0aDo2cHg7aGVpZ2h0OjZweDtib3JkZXItcmFkaXVzOjUwJTsKICAgIGJhY2tncm91bmQ6dmFyKC0tZ2xvdyk7CiAgICBvcGFjaXR5Oi41OwogIH0KICAuZW5kIC5hcmN7CiAgICBtYXJnaW4tdG9wOjMwcHg7CiAgICBmb250LWZhbWlseToiSW5zdHJ1bWVudCBTZXJpZiIsc2VyaWY7CiAgICBmb250LXN0eWxlOml0YWxpYzsKICAgIGZvbnQtc2l6ZToxN3B4OwogICAgY29sb3I6dmFyKC0tZmFpbnQpOwogICAgbGV0dGVyLXNwYWNpbmc6LjAyZW07CiAgfQogIC5lbmQgLmFyYyBie2NvbG9yOnZhcigtLWdsb3cpO2ZvbnQtd2VpZ2h0OjQwMH0KCiAgLyogcmVzZXQgKi8KICAucmVzZXR7CiAgICBtYXJnaW4tdG9wOjQ2cHg7CiAgICBiYWNrZ3JvdW5kOm5vbmU7Ym9yZGVyOjFweCBzb2xpZCB2YXIoLS1saW5lKTsKICAgIGNvbG9yOnZhcigtLWZhaW50KTsKICAgIGZvbnQtZmFtaWx5OmluaGVyaXQ7Zm9udC1zaXplOjEycHg7CiAgICBsZXR0ZXItc3BhY2luZzouMTJlbTt0ZXh0LXRyYW5zZm9ybTp1cHBlcmNhc2U7CiAgICBwYWRkaW5nOjlweCAxOHB4O2JvcmRlci1yYWRpdXM6MjBweDtjdXJzb3I6cG9pbnRlcjsKICAgIHRyYW5zaXRpb246Y29sb3IgLjNzLGJvcmRlci1jb2xvciAuM3M7CiAgfQogIC5yZXNldDpob3Zlcntjb2xvcjp2YXIoLS1tdXRlZCk7Ym9yZGVyLWNvbG9yOnZhcigtLWZhaW50KX0KCiAgLyogYWxsLWRvbmUgZmxvdXJpc2ggKi8KICAuY29tcGxldGUtbXNnewogICAgdGV4dC1hbGlnbjpjZW50ZXI7CiAgICBtYXJnaW46MzBweCAwIC0xMHB4OwogICAgZm9udC1mYW1pbHk6Ikluc3RydW1lbnQgU2VyaWYiLHNlcmlmOwogICAgZm9udC1zdHlsZTppdGFsaWM7CiAgICBmb250LXNpemU6MjBweDsKICAgIGNvbG9yOnZhcigtLWdsb3cpOwogICAgb3BhY2l0eTowOwogICAgbWF4LWhlaWdodDowOwogICAgb3ZlcmZsb3c6aGlkZGVuOwogICAgdHJhbnNpdGlvbjpvcGFjaXR5IC44cyBlYXNlLCBtYXgtaGVpZ2h0IC44cyBlYXNlOwogIH0KICBib2R5LmFsbC1kb25lIC5jb21wbGV0ZS1tc2d7b3BhY2l0eToxO21heC1oZWlnaHQ6NjBweH0KCiAgOmZvY3VzLXZpc2libGV7b3V0bGluZToycHggc29saWQgdmFyKC0tZ2xvdyk7b3V0bGluZS1vZmZzZXQ6M3B4O2JvcmRlci1yYWRpdXM6NnB4fQoKICBAbWVkaWEgKHByZWZlcnMtcmVkdWNlZC1tb3Rpb246cmVkdWNlKXsKICAgICp7dHJhbnNpdGlvbjpub25lIWltcG9ydGFudDtzY3JvbGwtYmVoYXZpb3I6YXV0b30KICB9CgogIEBtZWRpYSAobWF4LXdpZHRoOjUyMHB4KXsKICAgIC5ncm91cC13aGVue21hcmdpbi1sZWZ0OjB9CiAgICBoMXtmb250LXNpemU6Y2xhbXAoNDZweCwxNnZ3LDcwcHgpfQogIH0KPC9zdHlsZT4KPC9oZWFkPgo8Ym9keT4KPGRpdiBjbGFzcz0iYXVyYSI+PC9kaXY+CjxkaXYgY2xhc3M9IndyYXAiPgoKICA8ZGl2IGNsYXNzPSJleWVicm93Ij5FUCDCtyDmmpHmnJ/liLbkvZw8L2Rpdj4KICA8aDE+UGhhc2UgPGVtPjA8L2VtPjwvaDE+CiAgPHAgY2xhc3M9ImRhdGVzIj7njrDlnKgg4oaSIDcvMiDCtyDkuI3lvIAgREFXIOeahOmihOWkh+acnzwvcD4KICA8cCBjbGFzcz0ic3ViIj7mlrDnlLXohJHliLDotKflubYgc2V0dXAg5a6M5oiQ5LmL5YmNLOeUqOS4jeaPkueUteeahOaXtumXtOaKiuaWueWQkeOAgee0oOadkOWSjOW9lemfs+WcsOWfuumDveWkh+WlveOAguW8gOacuumCo+WkqeebtOaOpei/myBXMSzkuI3mtarotLnkuIDnp5LlnKjjgIzmiJHor6XlubLlmJvjgI3kuIrjgII8L3A+CgogIDxkaXYgY2xhc3M9Im1ldGVyIj4KICAgIDxzcGFuIGNsYXNzPSJjb3VudCI+PGIgaWQ9ImRvbmUiPjA8L2I+IC8gPHNwYW4gaWQ9InRvdGFsIj4wPC9zcGFuPjwvc3Bhbj4KICAgIDxzcGFuIGNsYXNzPSJsYmwiPuW3suWujOaIkDwvc3Bhbj4KICA8L2Rpdj4KICA8ZGl2IGNsYXNzPSJ0cmFjayI+PGRpdiBjbGFzcz0iZmlsbCI+PC9kaXY+PC9kaXY+CgogIDxkaXYgY2xhc3M9ImNvbXBsZXRlLW1zZyI+UGhhc2UgMCBjb21wbGV0ZSDigJQgNy8zIOW8gOacuuWNs+WPr+WKqOaJi+OAgjwvZGl2PgoKICA8ZGl2IGlkPSJsaXN0Ij48L2Rpdj4KCiAgPGRpdiBjbGFzcz0ibm90ZSI+CiAgICA8ZGl2IGNsYXNzPSJ0YWciPui/memYtuauteWUr+S4gOeahOe6quW+izwvZGl2PgogICAgPHA+6L6T5YWl5Y+v5Lul5bC95oOF5YGaLOS9huWIq+iuqeOAjOWGjeWkmuWQrOeCueOAgeWGjeWkmuivu+eCueOAjeWPmOaIkOaLluW7tuOAguaWsOeUteiEkeS4gOWIsOOAgXNldHVwIOS4gOWujCzlsLHku47ovpPlhaXliIfliLDovpPlh7os5byA5aeL5Yqo5omL44CCPC9wPgogIDwvZGl2PgoKICA8ZGl2IGNsYXNzPSJlbmQiPgogICAgPGgyPuWBmuWujOi/memYtuautSzkvaDmiYvph4zlupTor6XmnIk8L2gyPgogICAgPHVsPgogICAgICA8bGk+5LiA5Lu9IEx1bWludXMg5omp5YaZ5Zyw5Zu+PC9saT4KICAgICAgPGxpPuS4gOS4qiByZWZlcmVuY2Ug5q2M5Y2VICsg56yU6K6wPC9saT4KICAgICAgPGxpPuS4gOaKiueQtOaIv+W9leS4i+eahOenjeWtkDwvbGk+CiAgICAgIDxsaT7kuIDlj7DphY3lpb3jgIHkuJTlvZXpn7Ppmo/ml7blvoXlkb3nmoTmlrDnlLXohJE8L2xpPgogICAgPC91bD4KICAgIDxwIGNsYXNzPSJhcmMiPkludHJvIMK3IDxiPkx1bWludXM8L2I+IMK3IGZsb2F0eSDCtyA/IMK3IEJ5ZTwvcD4KICA8L2Rpdj4KCiAgPGJ1dHRvbiBjbGFzcz0icmVzZXQiIGlkPSJyZXNldCI+5riF56m66L+b5bqmPC9idXR0b24+CjwvZGl2PgoKPHNjcmlwdD4KY29uc3QgREFUQSA9IFsKICB7CiAgICBudW06IkkiLCB0aXRsZToi5pG46bG8ICsg56KO54mH5pe26Ze0Iiwgd2hlbjoi5LiN5o+S55S1IMK3IOS4jeWNoOaZmuS4iiDCtyDkuIrnj63kuZ/og73lgbflgbflubIiLAogICAgaXRlbXM6WwogICAgICB7aWQ6ImExIiwgbWFpbjoi5ouG6KejIEx1bWludXMs5YaZ5LiA5Lu944CM5omp5YaZ5Zyw5Zu+44CNIiwKICAgICAgIGhpbnQ6IuaguOW/g+WKqOacuuaYr+WTquWHoOS4qumfsyDCtyDkuLrku4DkuYjlkLjlvJXkvaAo5ZKM5aOwP+mfs+iJsj/oioLlpY8/KSDCtyDopoHmi4nliLAgNSDliIbpkp/lvoDlk6rplb/jgILmloflrZfmiJbor63pn7PlpIflv5jlvZXpg73ooYws55uu55qE5piv5byA5py66YKj5aSp55+l6YGT5b6A5ZOq6LWw44CCIn0sCiAgICAgIHtpZDoiYTIiLCBtYWluOiLlu7ogcmVmZXJlbmNlIOW6kyjlubbov5vmr4/lpKkgMWgg5ZCs5q2MKSIsCiAgICAgICBoaW50OiLkupTpppblkITlrZjlh6DmnaHlj4LogIMs5q+P5p2h6K6w5LiA5Y+lPGI+44CM5oiR5oOz5YG35a6D55qE5LuA5LmI44CNPC9iPuOAguWtmOaIkOS4gOS4quatjOWNlSArIOS4gOS7veeslOiusOOAgiJ9LAogICAgICB7aWQ6ImEzIiwgbWFpbjoi6K+75LmmIC8g5YiG5p6Q6Z+z5LmQIiwKICAgICAgIGhpbnQ6IuS5kOeQhuOAgee8luabsuOAgea3t+mfs+ebuOWFs+eahOmDveebtOaOpeacjeWKoei/meW8oCBFUOOAguWIhuaekOmfs+S5kOWSjOW7uiByZWZlcmVuY2Ug5Yeg5LmO5piv5ZCM5LiA5Lu25LqLLOWQiOedgOWBmuOAgiJ9LAogICAgXQogIH0sCiAgewogICAgbnVtOiJJSSIsIHRpdGxlOiLmr4/lpKnnkLTmiL/pgqPkuIDkuKrlpJrlsI/ml7YiLCB3aGVuOiLkvaDov5nlkajllK/kuIDog73jgIznnJ/mraPliJvkvZzjgI3nmoTmuKDpgZMiLAogICAgaXRlbXM6WwogICAgICB7aWQ6ImIxIiwgbWFpbjoi5Zyo6ZKi55C05LiK5YW756eN5a2QIiwKICAgICAgIGhpbnQ6IuivlSBMdW1pbnVzIOeahOaJqeWGmeaWueWQkeOAgeaJvuWSjOWjsOOAgeWTvOaXi+W+iyzkuZ/nu5kgZmxvYXR5IOWSjOesrOWbm+mmlumaj+aJi+ivleaDs+azleOAgiJ9LAogICAgICB7aWQ6ImIyIiwgbWFpbjoi5omL5py65b2V5LiL5Lu75L2V5YaS5Ye65p2l55qE5Lic6KW/IiwKICAgICAgIGhpbnQ6IuWTquaAleWNiuWPpeS5n+W9lSw8Yj7liKvliKA8L2I+44CC562J5paw55S16ISR5Yiw5LqG55u05o6l5b6AIERBVyDph4zmkKws55yB5b6X5LuO6Zu25YaZ44CCIn0sCiAgICBdCiAgfSwKICB7CiAgICBudW06IklJSSIsIHRpdGxlOiLmlrDnlLXohJHliLDotKflkI7nmoQgc2V0dXAiLCB3aGVuOiLnuqYgNy8xIOWIsOi0pyDCtyDnlZnkuIDkuKTlpKkgwrcg57uZ44CM5YaZ552A5bCx5b2V44CN5omT5Zyw5Z+6IiwKICAgIGl0ZW1zOlsKICAgICAge2lkOiJjMSIsIG1haW46IuijheWlvSBEQVfjgIHmj5Lku7bjgIHpn7PoibIs5pWw5o2u6L+B56e75a6MIiwKICAgICAgIGhpbnQ6IiJ9LAogICAgICB7aWQ6ImMyIiwgbWFpbjoi6YWN5aW944CM5b2V6Z+z6ZqP5pe25b6F5ZG944CN6ZO+6Lev5bm25rWL6K+VIiwKICAgICAgIGhpbnQ6Ium6puWFi+mjjuOAgemfs+mikeaOpeWPo+aOpeWlvSzlrZjkuIDkuKo8Yj7kuIDplK7lsLHog73nlKjnmoTlvZXpn7PmqKHmnb88L2I+KOeUteW5s+OAgeebkeWQrOOAgei+k+WFpemihOiuvuWlvSks5b2V5Lik5p2h5rWL6K+V56Gu6K6k5rKh6Zeu6aKY44CCIn0sCiAgICAgIHtpZDoiYzMiLCBtYWluOiLmiorpooTlpIfmnJ/mlJLnmoTkuJzopb/lvZLkvY0iLAogICAgICAgaGludDoi6K+t6Z+z5aSH5b+Y5b2V6YeM55qE56eN5a2Q44CBcmVmZXJlbmNlIOatjOWNleWSjOeslOiusOOAgUx1bWludXMg5omp5YaZ5Zyw5Zu+LOaVtOeQhuWIsOS4gOWkhCw3LzMg5byA5py66IO955u05o6l6LCD55So44CCIn0sCiAgICBdCiAgfSwKXTsKCmNvbnN0IEtFWSA9ICJlcF9waGFzZTBfdjIiOwpsZXQgc3RhdGUgPSB7fTsKdHJ5IHsgc3RhdGUgPSBKU09OLnBhcnNlKGxvY2FsU3RvcmFnZS5nZXRJdGVtKEtFWSkpIHx8IHt9OyB9IGNhdGNoKGUpeyBzdGF0ZSA9IHt9OyB9Cgpjb25zdCBsaXN0RWwgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgibGlzdCIpOwpsZXQgdG90YWwgPSAwOwpjb25zdCByZXNldHRlcnMgPSBbXTsKCkRBVEEuZm9yRWFjaChncm91cD0+ewogIGNvbnN0IGcgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCJkaXYiKTsKICBnLmNsYXNzTmFtZSA9ICJncm91cCI7CiAgZy5pbm5lckhUTUwgPSBgCiAgICA8ZGl2IGNsYXNzPSJncm91cC1oZWFkIj4KICAgICAgPHNwYW4gY2xhc3M9Imdyb3VwLW51bSI+JHtncm91cC5udW19PC9zcGFuPgogICAgICA8c3BhbiBjbGFzcz0iZ3JvdXAtdGl0bGUiPiR7Z3JvdXAudGl0bGV9PC9zcGFuPgogICAgPC9kaXY+CiAgICA8ZGl2IGNsYXNzPSJncm91cC13aGVuIj4ke2dyb3VwLndoZW59PC9kaXY+YDsKICBncm91cC5pdGVtcy5mb3JFYWNoKGl0PT57CiAgICB0b3RhbCsrOwogICAgbGV0IGNvdW50ID0gTnVtYmVyKHN0YXRlW2l0LmlkXSkgfHwgMDsKICAgIGNvbnN0IHJvdyA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoImRpdiIpOwogICAgcm93LmNsYXNzTmFtZSA9ICJpdGVtIiArIChjb3VudCA+IDAgPyAiIGRvbmUiOiIiKTsKICAgIHJvdy5pbm5lckhUTUwgPSBgCiAgICAgIDxzcGFuIGNsYXNzPSJib3giPjwvc3Bhbj4KICAgICAgPHNwYW4gY2xhc3M9InR4dCI+CiAgICAgICAgPHNwYW4gY2xhc3M9Im1haW4iPiR7aXQubWFpbn08L3NwYW4+CiAgICAgICAgJHtpdC5oaW50ID8gYDxzcGFuIGNsYXNzPSJoaW50Ij4ke2l0LmhpbnR9PC9zcGFuPmA6IiJ9CiAgICAgIDwvc3Bhbj4KICAgICAgPHNwYW4gY2xhc3M9ImNvdW50ZXIiPgogICAgICAgIDxidXR0b24gdHlwZT0iYnV0dG9uIiBjbGFzcz0iY2J0biBkZWMiIGFyaWEtbGFiZWw9IuWHj+S4gOasoSI+4oiSPC9idXR0b24+CiAgICAgICAgPHNwYW4gY2xhc3M9ImNudW0iPiR7Y291bnR9PC9zcGFuPgogICAgICAgIDxidXR0b24gdHlwZT0iYnV0dG9uIiBjbGFzcz0iY2J0biBpbmMiIGFyaWEtbGFiZWw9IuWKoOS4gOasoSI+KzwvYnV0dG9uPgogICAgICA8L3NwYW4+YDsKICAgIGNvbnN0IGNudW0gPSByb3cucXVlcnlTZWxlY3RvcigiLmNudW0iKTsKICAgIGNvbnN0IGRlY0J0biA9IHJvdy5xdWVyeVNlbGVjdG9yKCIuZGVjIik7CiAgICBjb25zdCBzeW5jRGlzYWJsZWQgPSAoKT0+eyBkZWNCdG4uZGlzYWJsZWQgPSBjb3VudCA8PSAwOyB9OwogICAgY29uc3QgYXBwbHkgPSBkZWx0YT0+ewogICAgICBjb3VudCA9IE1hdGgubWF4KDAsIGNvdW50ICsgZGVsdGEpOwogICAgICBzdGF0ZVtpdC5pZF0gPSBjb3VudDsKICAgICAgY251bS50ZXh0Q29udGVudCA9IGNvdW50OwogICAgICByb3cuY2xhc3NMaXN0LnRvZ2dsZSgiZG9uZSIsIGNvdW50ID4gMCk7CiAgICAgIHN5bmNEaXNhYmxlZCgpOwogICAgICBzYXZlKCk7IHJlbmRlcigpOwogICAgfTsKICAgIHN5bmNEaXNhYmxlZCgpOwogICAgcm93LnF1ZXJ5U2VsZWN0b3IoIi5pbmMiKS5hZGRFdmVudExpc3RlbmVyKCJjbGljayIsICgpPT5hcHBseSgxKSk7CiAgICBkZWNCdG4uYWRkRXZlbnRMaXN0ZW5lcigiY2xpY2siLCAoKT0+YXBwbHkoLTEpKTsKICAgIHJlc2V0dGVycy5wdXNoKCgpPT57CiAgICAgIGNvdW50ID0gMDsKICAgICAgY251bS50ZXh0Q29udGVudCA9IDA7CiAgICAgIHJvdy5jbGFzc0xpc3QucmVtb3ZlKCJkb25lIik7CiAgICAgIHN5bmNEaXNhYmxlZCgpOwogICAgfSk7CiAgICBnLmFwcGVuZENoaWxkKHJvdyk7CiAgfSk7CiAgbGlzdEVsLmFwcGVuZENoaWxkKGcpOwp9KTsKCmRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCJ0b3RhbCIpLnRleHRDb250ZW50ID0gdG90YWw7CgpmdW5jdGlvbiBzYXZlKCl7CiAgdHJ5IHsgbG9jYWxTdG9yYWdlLnNldEl0ZW0oS0VZLCBKU09OLnN0cmluZ2lmeShzdGF0ZSkpOyB9IGNhdGNoKGUpe30KfQpmdW5jdGlvbiByZW5kZXIoKXsKICBjb25zdCBkb25lID0gT2JqZWN0LnZhbHVlcyhzdGF0ZSkuZmlsdGVyKHYgPT4gTnVtYmVyKHYpID4gMCkubGVuZ3RoOwogIGNvbnN0IGx1bSA9IHRvdGFsID8gZG9uZS90b3RhbCA6IDA7CiAgZG9jdW1lbnQuZG9jdW1lbnRFbGVtZW50LnN0eWxlLnNldFByb3BlcnR5KCItLWx1bSIsIGx1bS50b0ZpeGVkKDMpKTsKICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgiZG9uZSIpLnRleHRDb250ZW50ID0gZG9uZTsKICBkb2N1bWVudC5ib2R5LmNsYXNzTGlzdC50b2dnbGUoImFsbC1kb25lIiwgZG9uZT09PXRvdGFsICYmIHRvdGFsPjApOwp9Cgpkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgicmVzZXQiKS5hZGRFdmVudExpc3RlbmVyKCJjbGljayIsICgpPT57CiAgaWYoY29uZmlybSgi5riF56m65omA5pyJ6K6h5pWwPyIpKXsKICAgIHN0YXRlID0ge307IHNhdmUoKTsKICAgIHJlc2V0dGVycy5mb3JFYWNoKGZuPT5mbigpKTsKICAgIHJlbmRlcigpOwogIH0KfSk7CgpyZW5kZXIoKTsKPC9zY3JpcHQ+CjwvYm9keT4KPC9odG1sPgo=";
+function decodePhase0Html(){
+  const bin = atob(PHASE0_HTML_B64);
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return new TextDecoder('utf-8').decode(bytes);
+}
+
+// ---------- Date helpers ----------
+function pad2(n){ return String(n).padStart(2,'0'); }
+function dateToStr(d){ return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+function strToDate(s){
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function todayStr(){ return dateToStr(new Date()); }
+
+function buildWeekdayDates(){
+  const out = [];
+  let cur = new Date(SUMMER_START);
+  while (cur <= SUMMER_END) {
+    const dow = cur.getDay();
+    if (dow !== 0 && dow !== 6) out.push(dateToStr(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return out;
+}
+const WEEKDAY_DATES = buildWeekdayDates();
+
+// ---------- DEFAULTS ----------
+function buildOrchestrationWeeks(){
+  return SATURDAY_DATES.map(date => ({
+    date: date,
+    topic: "",
+    assignments: Array(5).fill(null).map(() => ({
+      desc: "", status: "○ Not Started"
+    }))
+  }));
+}
+
+function buildDefaults(){
+  return {
+    activeTab: 0,
+
+    ep: {
+      title: "", concept: "", status: "🌱 Pre-production",
+      tracks: [
+        { name:"Intro",       stages:["","","","","","",""], notes:"" },
+        { name:"Track 1",     stages:["","","","","","",""], notes:"" },
+        { name:"Interlude 1", stages:["","","","","","",""], notes:"" },
+        { name:"Track 2",     stages:["","","","","","",""], notes:"" },
+        { name:"Interlude 2", stages:["","","","","","",""], notes:"" },
+        { name:"Track 3",     stages:["","","","","","",""], notes:"" },
+        { name:"Outro",       stages:["","","","","","",""], notes:"" }
+      ],
+      checklist: { sequence:false, artwork:false, mastered:false, ready:false }
+    },
+
+    reading: {
+      books: [
+        { id:1, title:"Ant Encounters: Interaction Networks and Colony Behavior",
+          author:"Deborah M. Gordon", year:"2010", pages:432, read:0,
+          status:"📌 Want to Read", notes:"", start:null, end:null },
+        { id:2, title:"On Writing: A Memoir of the Craft",
+          author:"Stephen King", year:"", pages:320, read:0,
+          status:"📌 Want to Read", notes:"", start:null, end:null },
+        { id:3, title:"Confronting Silence",
+          author:"Tōru Takemitsu", year:"", pages:160, read:0,
+          status:"📌 Want to Read", notes:"", start:null, end:null }
+      ],
+      nextBookId: 4,
+      movies: [],
+      nextMovieId: 1,
+      activeDays: {}
+    },
+
+    work: {
+      entries: {
+        '2026-06-10': {
+          summary: 'Directional change：正式开始 API run and testing.',
+          professor: true,
+          coworker: true,
+          clocked: true
+        }
+      }
+    },
+
+    orchestration: {
+      weeks: buildOrchestrationWeeks(),
+      extraWeeks: [],
+      courseNotes: ""
+    },
+
+    piano: { practiced: {}, exercised: {} },
+
+    composition: {
+      pieces: [
+        { id:1, title:"well…哎…", instrumentation:"Piano, Violin, Cello, Clarinet",
+          status:"→ In Progress", target:"",
+          tasks:[
+            { text:"Re-examine overall structure and formal arc", done:false },
+            { text:"Revise the opening section", done:false },
+            { text:"Compose / expand the middle section", done:false },
+            { text:"Write and finalize the ending", done:false },
+            { text:"Clean final notation in notation software", done:false },
+            { text:"Prepare individual parts for each instrument", done:false },
+            { text:"Recording session preparation and scheduling", done:false }
+          ],
+          diary:"", collapsed:false }
+      ],
+      nextPieceId: 2
+    },
+
+    study: {
+      works: [
+        { id:1,  composer:"yoshimatsu", title:"昴星団舞曲集 — Pleiades Dances",
+          focus:"奇数拍乐句 (odd-meter phrases) · 旋律发展落点",
+          status:"○ Not Started", date:null, notes:"" },
+        { id:2,  composer:"yoshimatsu", title:"Fuzzy Bird Saxophone Sonata",
+          focus:"和声 (harmony) · 钢琴织体 (piano texture) · 律动 (groove/rhythm)",
+          status:"○ Not Started", date:null, notes:"" },
+        { id:3,  composer:"yoshimatsu", title:"朱鷺の哀歌 — Elegy for Jōku",
+          focus:"空间感 · 呼吸感 (breath) · 弦乐分层",
+          status:"○ Not Started", date:null, notes:"" },
+        { id:4,  composer:"yoshimatsu", title:"Piano Concerto \"Memo Flora\" 随意花木",
+          focus:"结构设计 · 和声 · 钢琴华彩 (cadenza) · 配器",
+          status:"○ Not Started", date:null, notes:"" },
+        { id:5,  composer:"yoshimatsu", title:"Symphony No. 4",
+          focus:"乐章对比 · Metric modulation · Lydian chromatic · 曲式结构 · 配器",
+          status:"○ Not Started", date:null, notes:"" },
+        { id:6,  composer:"takemitsu", title:"Harmonic Language — General Study",
+          focus:"和声语汇 · 美学观念 · 哲学背景 (ref: Confronting Silence)",
+          status:"○ Not Started", date:null, notes:"" },
+        { id:7,  composer:"takemitsu", title:"Rain Tree Sketch",
+          focus:"短作品思维 · 动机发展 · 结构 · 标题取名",
+          status:"○ Not Started", date:null, notes:"" },
+        { id:8,  composer:"takemitsu", title:"Distance de fée",
+          focus:"短作品思维 · 动机发展 · 标题与概念",
+          status:"○ Not Started", date:null, notes:"" },
+        { id:9,  composer:"takemitsu", title:"Pause Interrompue",
+          focus:"短作品思维 · 动机发展 · 标题与概念",
+          status:"○ Not Started", date:null, notes:"" },
+        { id:10, composer:"takemitsu", title:"Requiem",
+          focus:"早期作品风格 · 弦乐写作 · 织体",
+          status:"○ Not Started", date:null, notes:"" },
+        { id:11, composer:"takemitsu", title:"Dorian Horizon",
+          focus:"弦乐队写作 · 色彩与空间 · 织体层次",
+          status:"○ Not Started", date:null, notes:"" },
+        { id:12, composer:"takemitsu", title:"November Steps",
+          focus:"和声 · 配器 · 结构设计",
+          status:"○ Not Started", date:null, notes:"" },
+        { id:13, composer:"takemitsu", title:"A Flock Descends into the Pentagonal Garden",
+          focus:"哲学观念 · 和声结构 · 晚期作品风格",
+          status:"○ Not Started", date:null, notes:"" }
+      ],
+      nextWorkId: 14,
+      composers: [
+        { id: 'yoshimatsu', name: '吉松隆 Yoshimatsu', pillCls: 'pill-amber' },
+        { id: 'takemitsu', name: '武満徹 Takemitsu', pillCls: 'pill-teal' }
+      ],
+      nextComposerId: 1
+    },
+
+    future: {
+      careerNotes: "",
+      explore: Array.from({length:8}, (_,i) => ({ id:i+1, text:"", done:false })),
+      exploreNextId: 9,
+      weeklyHours: [
+        { week:1,  period:"Jun 8–12",       done:false, hours:null, notes:"" },
+        { week:2,  period:"Jun 15–19",      done:false, hours:null, notes:"" },
+        { week:3,  period:"Jun 22–26",      done:false, hours:null, notes:"" },
+        { week:4,  period:"Jun 29 – Jul 3", done:false, hours:null, notes:"" },
+        { week:5,  period:"Jul 6–10",       done:false, hours:null, notes:"" },
+        { week:6,  period:"Jul 13–17",      done:false, hours:null, notes:"" },
+        { week:7,  period:"Jul 20–24",      done:false, hours:null, notes:"" },
+        { week:8,  period:"Jul 27–31",      done:false, hours:null, notes:"" },
+        { week:9,  period:"Aug 3–7",        done:false, hours:null, notes:"" },
+        { week:10, period:"Aug 10–14",      done:false, hours:null, notes:"" },
+        { week:11, period:"Aug 17–21",      done:false, hours:null, notes:"" },
+        { week:12, period:"Aug 24–28",      done:false, hours:null, notes:"" },
+        { week:13, period:"Aug 31 – Sep 1", done:false, hours:null, notes:"" }
+      ],
+      vrStatus: "○ Not Started",
+      vrChecklist: { lit:false, research:false, self:false, consult:false },
+      vrNotes: "",
+      blogStatus: "💭 Just an idea",
+      blogNotes: "",
+      podcastEpisodes: [],
+      podcastNextId: 1,
+      openNotes: ""
+    }
+  };
+}
+
+const DEFAULTS = buildDefaults();
+
+// ---------- deepMerge ----------
+function isPlainObject(v){
+  return v !== null && typeof v === 'object' && !Array.isArray(v);
+}
+function deepMerge(target, src){
+  if (!isPlainObject(target) || !isPlainObject(src)) return (src === undefined ? target : src);
+  const out = Array.isArray(target) ? target.slice() : Object.assign({}, target);
+  for (const key of Object.keys(src)) {
+    const sv = src[key];
+    const tv = out[key];
+    if (isPlainObject(sv) && isPlainObject(tv)) {
+      out[key] = deepMerge(tv, sv);
+    } else if (sv !== undefined) {
+      out[key] = sv;
+    }
+  }
+  return out;
+}
+
+// ---------- debounce ----------
+function debounce(fn, ms){
+  let t = null;
+  function debounced(...args){
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), ms);
+  }
+  debounced.flush = function(...args){
+    clearTimeout(t);
+    t = null;
+    fn(...args);
+  };
+  return debounced;
+}
+
+// ---------- state / persistence ----------
+let state = null;
+
+function loadState(){
+  let saved = null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) saved = JSON.parse(raw);
+  } catch (e) {
+    console.warn('Failed to parse saved state', e);
+  }
+  const fresh = buildDefaults();
+  state = saved ? deepMerge(fresh, saved) : fresh;
+  // Migration: week 3 cancelled (teacher leave) — shift week 3+ dates by +7 days.
+  if (state.orchestration && Array.isArray(state.orchestration.weeks)
+      && state.orchestration.weeks[2] && state.orchestration.weeks[2].date === '2026-06-27') {
+    state.orchestration.weeks.slice(2).forEach(w => {
+      if (w.date) {
+        const d = strToDate(w.date);
+        d.setDate(d.getDate() + 7);
+        w.date = dateToStr(d);
+      }
+    });
+    persistNow();
+  }
+}
+
+function showSavedBadge(){
+  const badge = document.getElementById('saved-badge');
+  if (!badge) return;
+  badge.classList.add('show');
+  clearTimeout(showSavedBadge._t);
+  showSavedBadge._t = setTimeout(() => badge.classList.remove('show'), 1500);
+}
+
+function persistNow(){
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    showSavedBadge();
+  } catch (e) {
+    console.warn('Failed to save state', e);
+  }
+}
+
+const saveState = debounce(() => persistNow(), 300);
+const saveStateMarked = debounce(() => persistNow(), 300);
+
+// ---------- General helper utilities ----------
+function getSummerDay(){
+  const today = new Date();
+  const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const diff = Math.floor((t - SUMMER_START) / 86400000) + 1;
+  return Math.max(1, Math.min(SUMMER_TOTAL_DAYS, diff));
+}
+
+function getDaysRemaining(){
+  const today = new Date();
+  const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const diff = Math.floor((SUMMER_END - t) / 86400000);
+  return Math.max(0, diff);
+}
+
+function getDaysUntilStart(){
+  const today = new Date();
+  const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return Math.max(0, Math.floor((SUMMER_START - t) / 86400000));
+}
+
+function hasSummerStarted(){
+  const today = new Date();
+  const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return t >= SUMMER_START;
+}
+
+function hasSummerEnded(){
+  const today = new Date();
+  const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return t > SUMMER_END;
+}
+
+function getWeekdayDates(){
+  return WEEKDAY_DATES;
+}
+
+function isWithinSummer(dateStr){
+  const d = strToDate(dateStr);
+  return d >= SUMMER_START && d <= SUMMER_END;
+}
+
+function consecutiveStreakFromToday(hasEntryFn){
+  let streak = 0;
+  let cur = new Date();
+  cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate());
+  while (true) {
+    const ds = dateToStr(cur);
+    if (hasEntryFn(ds)) {
+      streak++;
+      cur.setDate(cur.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function getPracticedStreak(){
+  return consecutiveStreakFromToday(ds => !!state.piano.practiced[ds]);
+}
+
+function getExerciseStreak(){
+  return consecutiveStreakFromToday(ds => !!state.piano.exercised[ds]);
+}
+
+function getReadingStreak(){
+  return consecutiveStreakFromToday(ds => !!state.reading.activeDays[ds]);
+}
+
+const WEEKDAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function formatDate(d){
+  const date = (typeof d === 'string') ? strToDate(d) : d;
+  return WEEKDAY_NAMES[date.getDay()] + ', ' + MONTH_NAMES[date.getMonth()] + ' ' + date.getDate();
+}
+
+function formatDateLong(d){
+  const date = (typeof d === 'string') ? strToDate(d) : d;
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  return days[date.getDay()] + ', ' + MONTH_NAMES[date.getMonth()] + ' ' + date.getDate();
+}
+
+function formatDateShort(dateStr){
+  const date = strToDate(dateStr);
+  return MONTH_NAMES[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+}
+
+function seededEmoji(dateStr){
+  let h = 0;
+  for (let i = 0; i < dateStr.length; i++) {
+    h = (h * 31 + dateStr.charCodeAt(i)) >>> 0;
+  }
+  return EMOJI_POOL[h % EMOJI_POOL.length];
+}
+
+function escapeHtml(s){
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
+
+function autoGrow(el){
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = (el.scrollHeight + 2) + 'px';
+}
+
+// ---------- Cross-tab metric helpers ----------
+function trackCompletionPct(track){
+  const done = track.stages.filter(s => s === '✓').length;
+  return Math.round(done / STAGE_NAMES.length * 100);
+}
+function epOverallPct(){
+  const tracks = state.ep.tracks;
+  if (!tracks.length) return 0;
+  const sum = tracks.reduce((a,t) => a + trackCompletionPct(t), 0);
+  return Math.round(sum / tracks.length);
+}
+function epTracksDoneCount(){
+  return state.ep.tracks.filter(t => t.stages.every(s => s === '✓')).length;
+}
+function readingCompletedCount(){
+  return state.reading.books.filter(b => b.status === '✅ Completed').length;
+}
+function workClockedCount(){
+  return WEEKDAY_DATES.filter(ds => state.work.entries[ds] && state.work.entries[ds].clocked).length;
+}
+function orchAllAssignments(){
+  const all = [];
+  state.orchestration.weeks.forEach(w => all.push(...w.assignments));
+  state.orchestration.extraWeeks.forEach(w => all.push(...w.assignments));
+  return all;
+}
+function orchLoggedCount(){
+  return orchAllAssignments().filter(a => a.desc && a.desc.trim() !== '').length;
+}
+function pianoPracticedCount(){
+  return Object.values(state.piano.practiced).filter(Boolean).length;
+}
+function pianoExercisedCount(){
+  return Object.values(state.piano.exercised).filter(Boolean).length;
+}
+function compTaskCounts(){
+  let done = 0, total = 0;
+  state.composition.pieces.forEach(p => {
+    p.tasks.forEach(t => { total++; if (t.done) done++; });
+  });
+  return { done, total, pieces: state.composition.pieces.length };
+}
+function studyAnalyzedCount(){
+  return state.study.works.filter(w => w.status === '✅ Complete').length;
+}
+function futureTotalHours(){
+  return state.future.weeklyHours.reduce((sum, w) => sum + (typeof w.hours === 'number' ? w.hours : 0), 0);
+}
+
+// ---------- renderOverview ----------
+function renderOverview(el){
+  const started = hasSummerStarted();
+  const ended = hasSummerEnded();
+  const summerDay = getSummerDay();
+  const daysRemaining = getDaysRemaining();
+  const daysUntilStart = getDaysUntilStart();
+  const progressPct = !started ? 0 : clamp(Math.round(summerDay / SUMMER_TOTAL_DAYS * 100), 0, 100);
+  const progressLabelLeft = !started
+    ? `Starts in ${daysUntilStart} day${daysUntilStart === 1 ? '' : 's'}`
+    : `Day ${summerDay} of ${SUMMER_TOTAL_DAYS}`;
+  const progressLabelRight = ended
+    ? 'Summer complete'
+    : `${daysRemaining} days remaining`;
+
+  const epPct = epOverallPct();
+  const epTracksDone = epTracksDoneCount();
+  const readCompleted = readingCompletedCount();
+  const readingStreak = getReadingStreak();
+  const workClocked = workClockedCount();
+  const orchLogged = orchLoggedCount();
+  const pianoCount = pianoPracticedCount();
+  const pianoStreak = getPracticedStreak();
+  const compCounts = compTaskCounts();
+  const studyCount = studyAnalyzedCount();
+  const futureHours = futureTotalHours();
+
+  const cards = [
+    { icon:'🎧', title:'EP', tab:1,
+      metric: `${epPct}% overall · ${epTracksDone} / 7 tracks done`,
+      desc: state.ep.title ? `“${state.ep.title}” — ${state.ep.status}` : 'Plan, produce, and finish your summer EP.' },
+    { icon:'📚', title:'影视书籍', tab:2,
+      metric: `${readCompleted} / ${state.reading.books.length} books completed · 🔥 ${readingStreak}-day streak`,
+      desc: 'Track books, movies, and your reading streak.' },
+    { icon:'💼', title:'工作 Work', tab:3,
+      metric: `${workClocked} / ${WEEKDAY_DATES.length} weekdays clocked out`,
+      desc: 'Daily work log — what got done, who you checked in with.' },
+    { icon:'🎻', title:'管弦乐课 Orchestration', tab:4,
+      metric: `${orchLogged} assignments logged · 12 Saturday sessions`,
+      desc: '12 Saturday sessions — assignments, drafts, deadlines.' },
+    { icon:'🎹', title:'Practice', tab:5,
+      metric: `Played piano ${pianoCount} day${pianoCount === 1 ? '' : 's'} · 🔥 ${pianoStreak}-day streak`,
+      desc: 'Daily practice calendar across the whole summer.' },
+    { icon:'✍️', title:'作曲 Composition', tab:6,
+      metric: `${compCounts.done} / ${compCounts.total} tasks done across ${compCounts.pieces} piece${compCounts.pieces === 1 ? '' : 's'}`,
+      desc: 'Pieces in progress — tasks, targets, and the diary.' },
+    { icon:'🎼', title:'作曲家 Composer Study', tab:7,
+      metric: `${studyCount} / 13 works analyzed`,
+      desc: 'Yoshimatsu & Takemitsu — guided listening and analysis.' },
+    { icon:'🔭', title:'未来 Future', tab:8,
+      metric: `${futureHours} total hours logged`,
+      desc: 'Career exploration, VR research, blog, and open notes.' }
+  ];
+
+  el.innerHTML = `
+    <h2 class="section-title">Summer at a Glance</h2>
+    <div class="overview-progress-label">
+      <span>${progressLabelLeft}</span>
+      <span>${progressPct}%</span>
+      <span>${progressLabelRight}</span>
     </div>
-    <section id="view" class="view"></section>
-  </main>
-  <div id="savedFloat" class="saved-float">saved ✓</div>
+    <div class="progress-track" style="height:10px;">
+      <div class="progress-fill" style="width:${progressPct}%;"></div>
+    </div>
 
-  <script>
-    const STORAGE_KEY = "summer2026";
-    const START = "2026-06-08";
-    const END = "2026-09-01";
-    const TOTAL_DAYS = 86;
-    const SATURDAYS = ["2026-06-13","2026-06-20","2026-06-27","2026-07-04","2026-07-11","2026-07-18","2026-07-25","2026-08-01","2026-08-08","2026-08-15","2026-08-22","2026-08-29"];
-    const TABS = ["总览","EP","读书","工作","管弦乐课","练琴","作曲","作曲家","未来"];
-    const EP_STAGES = ["想法","设计","作曲","录音","编曲","混音","母带"];
-    const EP_STAGE_VALUES = ["","→","✓"];
-    const QUOTES = [
-      "Sound is time given form. — Tōru Takemitsu",
-      "To write is human, to edit is divine. — Stephen King",
-      "I believe music should be born out of silence. — Tōru Takemitsu",
-      "The first draft of anything is shit. — Ernest Hemingway",
-      "Music is the silence between the notes. — Claude Debussy",
-      "Write with the door closed, rewrite with the door open. — Stephen King",
-      "A composer is forever composing. — Tōru Takemitsu",
-      "Every note wants to go somewhere. — Ryuichi Sakamoto",
-      "Simplicity is the final achievement. — Frédéric Chopin",
-      "What we play is life. — Louis Armstrong"
-    ];
-    const PIANO_EMOJIS = "🌟 ✨ 🎹 🌸 🎶 🌈 🍀 💫 🎵 🌙 🦋 🍁 🎀 🌻 🪐".split(" ");
-    const DEFAULTS = {
-      activeTab: 0,
-      ep: {
-        title: "", concept: "", status: "🌱 Pre-production",
-        tracks: [
-          { name:"Intro", stages:["","","","","","",""], notes:"", collapsed:false },
-          { name:"Track 1", stages:["","","","","","",""], notes:"", collapsed:false },
-          { name:"Interlude 1", stages:["","","","","","",""], notes:"", collapsed:false },
-          { name:"Track 2", stages:["","","","","","",""], notes:"", collapsed:false },
-          { name:"Interlude 2", stages:["","","","","","",""], notes:"", collapsed:false },
-          { name:"Track 3", stages:["","","","","","",""], notes:"", collapsed:false },
-          { name:"Outro", stages:["","","","","","",""], notes:"", collapsed:false }
-        ],
-        checklist: { sequence:false, artwork:false, mastered:false, ready:false }
-      },
-      reading: {
-        books: [
-          { id:1, title:"Ant Encounters: Interaction Networks and Colony Behavior", author:"Deborah M. Gordon", year:"2010", pages:432, read:0, status:"📌 Want to Read", notes:"", start:null, end:null, color:"#c9a96e" },
-          { id:2, title:"On Writing: A Memoir of the Craft", author:"Stephen King", year:"", pages:320, read:0, status:"📌 Want to Read", notes:"", start:null, end:null, color:"#7eb8a4" },
-          { id:3, title:"Confronting Silence", author:"Tōru Takemitsu", year:"", pages:160, read:0, status:"📌 Want to Read", notes:"", start:null, end:null, color:"#b08dd1" }
-        ],
-        nextBookId: 4,
-        log: [],
-        todayOpen: false
-      },
-      work: {
-        entries: {}
-      },
-      orchestration: { weeks: [], extraWeeks: [], courseNotes: "" },
-      piano: { practiced:{}, lastMilestone: 0 },
-      composition: {
-        pieces: [
-          { id:1, title:"well…哎…", instrumentation:"Piano, Violin, Cello, Clarinet", status:"→ In Progress", target:"",
-            tasks:[
-              { text:"Re-examine overall structure and formal arc", done:false },
-              { text:"Revise the opening section", done:false },
-              { text:"Compose / expand the middle section", done:false },
-              { text:"Write and finalize the ending", done:false },
-              { text:"Clean final notation in notation software", done:false },
-              { text:"Prepare individual parts for each instrument", done:false },
-              { text:"Recording session preparation and scheduling", done:false }
-            ],
-            diary:"", collapsed:false }
-        ],
-        nextPieceId: 2
-      },
-      study: {
-        works: [
-          { id:1, composer:"yoshimatsu", title:"昴星団舞曲集 — Pleiades Dances", focus:"奇数拍乐句 (odd-meter phrases) · 旋律发展落点", status:"○ Not Started", date:null, notes:"" },
-          { id:2, composer:"yoshimatsu", title:"Fuzzy Bird Saxophone Sonata", focus:"和声 (harmony) · 钢琴织体 (piano texture) · 律动 (groove/rhythm)", status:"○ Not Started", date:null, notes:"" },
-          { id:3, composer:"yoshimatsu", title:"朱鷺の哀歌 — Elegy for Jōku", focus:"空间感 · 呼吸感 (breath) · 弦乐分层", status:"○ Not Started", date:null, notes:"" },
-          { id:4, composer:"yoshimatsu", title:"Piano Concerto \"Memo Flora\" 随意花木", focus:"结构设计 · 和声 · 钢琴华彩 (cadenza) · 配器", status:"○ Not Started", date:null, notes:"" },
-          { id:5, composer:"yoshimatsu", title:"Symphony No. 4", focus:"乐章对比 · Metric modulation · Lydian chromatic · 曲式结构 · 配器", status:"○ Not Started", date:null, notes:"" },
-          { id:6, composer:"takemitsu", title:"Harmonic Language — General Study", focus:"和声语汇 · 美学观念 · 哲学背景 (ref: Confronting Silence)", status:"○ Not Started", date:null, notes:"" },
-          { id:7, composer:"takemitsu", title:"Rain Tree Sketch", focus:"短作品思维 · 动机发展 · 结构 · 标题取名", status:"○ Not Started", date:null, notes:"" },
-          { id:8, composer:"takemitsu", title:"Distance de fée", focus:"短作品思维 · 动机发展 · 标题与概念", status:"○ Not Started", date:null, notes:"" },
-          { id:9, composer:"takemitsu", title:"Pause Interrompue", focus:"短作品思维 · 动机发展 · 标题与概念", status:"○ Not Started", date:null, notes:"" },
-          { id:10, composer:"takemitsu", title:"Requiem", focus:"早期作品风格 · 弦乐写作 · 织体", status:"○ Not Started", date:null, notes:"" },
-          { id:11, composer:"takemitsu", title:"Dorian Horizon", focus:"弦乐队写作 · 色彩与空间 · 织体层次", status:"○ Not Started", date:null, notes:"" },
-          { id:12, composer:"takemitsu", title:"November Steps", focus:"和声 · 配器 · 结构设计", status:"○ Not Started", date:null, notes:"" },
-          { id:13, composer:"takemitsu", title:"A Flock Descends into the Pentagonal Garden", focus:"哲学观念 · 和声结构 · 晚期作品风格", status:"○ Not Started", date:null, notes:"" }
-        ],
-        nextWorkId: 14
-      },
-      future: {
-        careerNotes: "",
-        explore: Array.from({length:8}, (_,i) => ({ id:i+1, text:"", done:false })),
-        exploreNextId: 9,
-        weeklyHours: [
-          { week:1, period:"Jun 8–12", hours:null, notes:"" },
-          { week:2, period:"Jun 15–19", hours:null, notes:"" },
-          { week:3, period:"Jun 22–26", hours:null, notes:"" },
-          { week:4, period:"Jun 29 – Jul 3", hours:null, notes:"" },
-          { week:5, period:"Jul 6–10", hours:null, notes:"" },
-          { week:6, period:"Jul 13–17", hours:null, notes:"" },
-          { week:7, period:"Jul 20–24", hours:null, notes:"" },
-          { week:8, period:"Jul 27–31", hours:null, notes:"" },
-          { week:9, period:"Aug 3–7", hours:null, notes:"" },
-          { week:10, period:"Aug 10–14", hours:null, notes:"" },
-          { week:11, period:"Aug 17–21", hours:null, notes:"" },
-          { week:12, period:"Aug 24–28", hours:null, notes:"" },
-          { week:13, period:"Aug 31 – Sep 1", hours:null, notes:"" }
-        ],
-        vrStatus: "○ Not Started",
-        vrChecklist: { lit:false, research:false, self:false, consult:false },
-        vrNotes: "",
-        blogStatus: "💭 Just an idea",
-        blogNotes: "",
-        blogIdeas: [],
-        openNotes: ""
-      }
-    };
-    let state;
-    let saveTimer;
-    let flashTimer;
+    <h2 class="section-title">Projects</h2>
+    <div class="grid-2" id="overview-cards"></div>
+  `;
 
-    const $ = id => document.getElementById(id);
-    const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, ch => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[ch]));
-    const todayStr = () => new Date().toISOString().slice(0,10);
-    const asDate = value => new Date(value + "T00:00:00");
-    const clamp = value => Math.max(0, Math.min(100, Math.round(value || 0)));
-    const dateRange = (start = START, end = END) => {
-      const out = [], current = asDate(start), last = asDate(end);
-      while (current <= last) { out.push(current.toISOString().slice(0,10)); current.setDate(current.getDate() + 1); }
-      return out;
-    };
-    const weekdays = () => dateRange().filter(day => ![0,6].includes(asDate(day).getDay()));
-    const formatDate = day => asDate(day).toLocaleDateString("en-US", { weekday:"long", month:"short", day:"numeric" });
-    const shortDate = day => asDate(day).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
-    const dayOfYear = day => {
-      const d = asDate(day), first = new Date(d.getFullYear(), 0, 0);
-      return Math.floor((d - first) / 86400000);
-    };
-    const daysBetween = (a,b) => Math.round((asDate(b) - asDate(a)) / 86400000);
-    function assignmentTemplate() {
-      return { desc:"", due:"", status:"○ Not Started", draft:false, revision:false, final:false, emailed:false, notes:"" };
-    }
-    function weekTemplate(day) {
-      return { date: day, topic:"", assignments: Array(5).fill(null).map(() => assignmentTemplate()) };
-    }
-    function normalizeDefaults(defaults) {
-      const clone = structuredClone(defaults);
-      clone.orchestration.weeks = SATURDAYS.map(weekTemplate);
-      return clone;
-    }
-    function deepMerge(base, saved) {
-      if (Array.isArray(base)) {
-        if (!Array.isArray(saved)) return structuredClone(base);
-        return saved.map((item, index) => {
-          if (base[index] && typeof base[index] === "object" && !Array.isArray(base[index])) return deepMerge(base[index], item);
-          return item;
-        });
-      }
-      if (base && typeof base === "object") {
-        const out = structuredClone(base);
-        if (saved && typeof saved === "object") {
-          Object.keys(saved).forEach(key => {
-            out[key] = key in base ? deepMerge(base[key], saved[key]) : saved[key];
-          });
-        }
-        return out;
-      }
-      return saved ?? base;
-    }
-    function loadState() {
-      const defaults = normalizeDefaults(DEFAULTS);
-      try {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-        state = deepMerge(defaults, saved);
-      } catch {
-        state = defaults;
-      }
-      state.activeTab = Number.isInteger(state.activeTab) ? state.activeTab : 0;
-      save(false);
-    }
-    function save(show = true) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      if (show) flashSaved();
-    }
-    function debouncedSave(renderAfter = false) {
-      clearTimeout(saveTimer);
-      saveTimer = setTimeout(() => {
-        save(true);
-        if (renderAfter) render();
-      }, 300);
-    }
-    function flashSaved() {
-      $("savedTop").classList.add("show");
-      $("savedFloat").classList.add("show");
-      clearTimeout(flashTimer);
-      flashTimer = setTimeout(() => {
-        $("savedTop").classList.remove("show");
-        $("savedFloat").classList.remove("show");
-      }, 1500);
-    }
-    function getPath(path) {
-      return path.split(".").reduce((obj, key) => obj?.[key], state);
-    }
-    function ensurePath(path) {
-      const parts = path.split(".");
-      let obj = state;
-      for (let i = 0; i < parts.length - 1; i++) {
-        if (obj[parts[i]] == null) obj[parts[i]] = {};
-        obj = obj[parts[i]];
-      }
-    }
-    function setPath(path, value) {
-      ensurePath(path);
-      const parts = path.split(".");
-      let obj = state;
-      for (let i = 0; i < parts.length - 1; i++) obj = obj[parts[i]];
-      obj[parts.at(-1)] = value;
-    }
-    function progress(percent) {
-      return `<div class="progress"><span style="width:${clamp(percent)}%"></span></div>`;
-    }
-    function input(path, value, type = "text", extra = "") {
-      return `<input data-path="${path}" type="${type}" value="${escapeHtml(value ?? "")}" ${extra}>`;
-    }
-    function textarea(path, value, extra = "") {
-      return `<textarea data-path="${path}" ${extra}>${escapeHtml(value ?? "")}</textarea>`;
-    }
-    function select(path, value, options) {
-      return `<select data-path="${path}">${options.map(option => `<option value="${escapeHtml(option)}"${option === value ? " selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select>`;
-    }
-    function check(path, label, checked, cls = "") {
-      return `<label class="check ${cls}"><input data-path="${path}" type="checkbox" ${checked ? "checked" : ""}><span class="box"></span><span>${label}</span></label>`;
-    }
-    function summerStats() {
-      const t = todayStr();
-      const elapsed = t < START ? 0 : t > END ? TOTAL_DAYS : daysBetween(START, t) + 1;
-      return { elapsed, remaining: Math.max(0, TOTAL_DAYS - elapsed), percent: clamp((elapsed / TOTAL_DAYS) * 100) };
-    }
-    function streakFromDates(dates) {
-      const set = new Set(dates);
-      const all = dateRange();
-      let longest = 0, run = 0;
-      all.forEach(day => {
-        if (set.has(day)) { run++; longest = Math.max(longest, run); } else run = 0;
-      });
-      let current = 0;
-      const today = todayStr();
-      const idx = all.indexOf(today);
-      for (let i = idx >= 0 ? idx : all.length - 1; i >= 0; i--) {
-        if (set.has(all[i])) current++; else break;
-      }
-      return { current, longest };
-    }
-    function pianoStreak() {
-      return streakFromDates(Object.keys(state.piano.practiced).filter(day => state.piano.practiced[day]));
-    }
-    function readingStreak() {
-      return streakFromDates(state.reading.log.map(entry => entry.date));
-    }
-    function trackCompletion(track) {
-      return clamp((track.stages.filter(stage => stage === "✓").length / 7) * 100);
-    }
-    function trackDone(track) {
-      return track.stages.every(stage => stage === "✓");
-    }
-    function epOverall() {
-      return clamp(state.ep.tracks.reduce((sum, track) => sum + trackCompletion(track), 0) / state.ep.tracks.length);
-    }
-    function classMetrics() {
-      const allWeeks = [...state.orchestration.weeks, ...state.orchestration.extraWeeks];
-      const assignments = allWeeks.flatMap(week => week.assignments);
-      return {
-        emailed: assignments.filter(assignment => assignment.emailed).length,
-        logged: assignments.filter(assignment => assignment.desc.trim() || assignment.due || assignment.notes.trim()).length
-      };
-    }
-    function renderTabs() {
-      $("tabBar").innerHTML = TABS.map((label, index) => `<button class="tab ${state.activeTab === index ? "active" : ""}" data-tab="${index}">${label}</button>`).join("");
-      const stats = summerStats();
-      $("dayStatus").textContent = `Day ${stats.elapsed} of ${TOTAL_DAYS}  ·  ${stats.remaining} days remaining`;
-    }
-    function render() {
-      renderTabs();
-      const renderers = [renderOverview, renderEP, renderReading, renderWork, renderOrchestration, renderPiano, renderComposition, renderStudy, renderFuture];
-      $("view").dataset.activeTab = state.activeTab;
-      $("view").innerHTML = renderers[state.activeTab]();
-    }
+  const cardsWrap = el.querySelector('#overview-cards');
+  cards.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'card project-card';
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.innerHTML = `
+      <div class="pc-head"><span class="pc-icon">${c.icon}</span><span>${escapeHtml(c.title)}</span></div>
+      <div class="pc-metric">${escapeHtml(c.metric)}</div>
+      <div class="pc-desc">${escapeHtml(c.desc)}</div>
+    `;
+    card.addEventListener('click', () => dispatch(c.tab));
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dispatch(c.tab); }
+    });
+    cardsWrap.appendChild(card);
+  });
+}
 
-    function renderOverview() {
-      const stats = summerStats();
-      const epDone = state.ep.tracks.filter(trackDone).length;
-      const completedBooks = state.reading.books.filter(book => book.status === "✅ Completed").length;
-      const workdays = weekdays();
-      const clocked = workdays.filter(day => state.work.entries[day]?.clocked).length;
-      const classData = classMetrics();
-      const practiced = Object.values(state.piano.practiced).filter(Boolean).length;
-      const piano = pianoStreak();
-      const reading = readingStreak();
-      const tasks = state.composition.pieces.flatMap(piece => piece.tasks);
-      const analyzed = state.study.works.filter(work => work.status === "✅ Complete").length;
-      const totalHours = state.future.weeklyHours.reduce((sum, week) => sum + Number(week.hours || 0), 0);
-      const cards = [
-        [1, "🎵", "EP", `${epOverall()}% overall  ·  ${epDone} / 7 tracks done`, "Track pipeline, release checklist, sonic direction."],
-        [2, "📚", "Reading", `${completedBooks} / ${state.reading.books.length} books completed  ·  🔥 ${reading.current}-day streak`, "Books, notes, and daily reading log."],
-        [3, "💼", "Work", `${clocked} / ${workdays.length} weekdays clocked out`, "Daily summaries, professor updates, coworker check-ins."],
-        [4, "🎼", "Orchestration", `${classData.emailed} assignments emailed  ·  ${classData.logged} logged`, "12 Saturday classes with week-by-week assignment tables."],
-        [5, "🎹", "Piano", `${practiced} days practiced  ·  🔥 ${piano.current}-day streak`, "Month calendar, deterministic practice emojis."],
-        [6, "✍️", "Composition", `${tasks.filter(task => task.done).length} / ${tasks.length} tasks done across ${state.composition.pieces.length} pieces`, "Piece tasks, targets, and diary notes."],
-        [7, "🎧", "Study", `${analyzed} / 13 works analyzed`, "Yoshimatsu and Takemitsu study tracker."],
-        [8, "🗺️", "Future", `${totalHours} total hours logged`, "Career exploration, VR/amblyopia research, notes."]
-      ];
-      const quote = QUOTES[dayOfYear(todayStr()) % QUOTES.length];
-      return `<div class="grid">
-        <section class="panel">
-          <div class="row"><h2>Summer progress</h2><span class="num">${stats.percent}%</span></div>
-          ${progress(stats.percent)}
-        </section>
-        <section class="panel quote serif">“${escapeHtml(quote)}”</section>
-        <section class="grid g2">${cards.map(card => `<article class="card project-card" data-tab="${card[0]}">
-          <h3>${card[1]} ${card[2]}</h3>
-          <p class="num">${escapeHtml(card[3])}</p>
-          <p class="muted">${escapeHtml(card[4])}</p>
-        </article>`).join("")}</section>
-      </div>`;
-    }
+// ============================================================
+// TAB 1 — EP
+// ============================================================
+const STAGE_CYCLE = ['', '→', '✓'];
+let epCollapsed = {}; // transient, not persisted: { trackIndex: bool }
+let epSubTab = 'main'; // transient: 'main' | 'phase0'
 
-    function renderEP() {
-      return `<div class="grid">
-        <section class="panel">
-          <div class="form-grid">
-            <div class="field"><label>EP Title</label>${input("ep.title", state.ep.title, "text", 'placeholder="Untitled EP" style="font-size:1.25rem"')}</div>
-            <div class="field"><label>Status</label>${select("ep.status", state.ep.status, ["🌱 Pre-production","🎬 In Production","🎛 Post-production","✅ Done"])}</div>
+function trackStatusInfo(track){
+  const stages = track.stages;
+  if (stages.every(s => s === '✓')) return { label: '✓ Done', cls: 'pill-teal' };
+  if (stages.some(s => s !== '')) return { label: '→ In Progress', cls: 'pill-amber' };
+  return { label: '○ Not Started', cls: 'pill-gray' };
+}
+
+function renderEP(el){
+  el.innerHTML = `
+    <h2 class="section-title">EP</h2>
+    <div class="row" id="ep-subtab-bar" style="gap:8px; margin-bottom:18px;">
+      <button type="button" class="btn-sm ep-subtab-btn" data-subtab="main">Tracks</button>
+      <button type="button" class="btn-sm ep-subtab-btn" data-subtab="phase0">Phase 0</button>
+    </div>
+    <div id="ep-subtab-content"></div>
+  `;
+
+  el.querySelectorAll('.ep-subtab-btn').forEach(btn => {
+    if (btn.dataset.subtab === epSubTab) {
+      btn.style.background = 'var(--accent)';
+      btn.style.color = 'var(--bg)';
+    }
+    btn.addEventListener('click', () => {
+      epSubTab = btn.dataset.subtab;
+      renderEP(el);
+    });
+  });
+
+  const contentEl = el.querySelector('#ep-subtab-content');
+  if (epSubTab === 'phase0') {
+    renderEPPhase0(contentEl);
+  } else {
+    renderEPMain(contentEl);
+  }
+}
+
+function renderEPPhase0(el){
+  el.innerHTML = `<iframe id="ep-phase0-frame" style="width:100%; min-height:80vh; border:1px solid var(--border); border-radius:10px; background:#0a0b12;"></iframe>`;
+  const frame = el.querySelector('#ep-phase0-frame');
+  frame.srcdoc = decodePhase0Html();
+}
+
+function renderEPMain(el){
+  const ep = state.ep;
+  const overall = epOverallPct();
+
+  const statusOptionsHtml = EP_STATUS_OPTIONS.map(s =>
+    `<option value="${escapeHtml(s)}" ${s === ep.status ? 'selected' : ''}>${escapeHtml(s)}</option>`
+  ).join('');
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="ep-top-grid">
+        <div class="col">
+          <input type="text" id="ep-title" class="ep-title-input" placeholder="Untitled EP" value="${escapeHtml(ep.title)}">
+          <textarea id="ep-concept" rows="3" placeholder="Concept / sonic direction...">${escapeHtml(ep.concept)}</textarea>
+          <div class="row">
+            <span class="muted small">Status</span>
+            <select id="ep-status">${statusOptionsHtml}</select>
           </div>
-          <div class="field"><label>Concept / Sonic Direction</label>${textarea("ep.concept", state.ep.concept, 'rows="3" placeholder="Aesthetic, mood, references, themes..."')}</div>
-          <div class="row"><span class="pill tag">${epOverall()}% overall</span></div>
-          ${progress(epOverall())}
-        </section>
-        ${state.ep.tracks.map((track, index) => renderTrackCard(track, index)).join("")}
-        <section class="panel">
-          <h2>EP Checklist</h2>
-          <div class="checks">
-            ${check("ep.checklist.sequence", "Final track sequence locked", state.ep.checklist.sequence)}
-            ${check("ep.checklist.artwork", "EP artwork / visual concept decided", state.ep.checklist.artwork)}
-            ${check("ep.checklist.mastered", "All tracks mastered", state.ep.checklist.mastered)}
-            ${check("ep.checklist.ready", "Ready for release", state.ep.checklist.ready)}
-          </div>
-        </section>
-      </div>`;
-    }
-    function renderTrackCard(track, index) {
-      const doneCount = track.stages.filter(stage => stage === "✓").length;
-      const status = doneCount === 7 ? "✅ Complete" : doneCount >= 5 ? "🎛 Post" : doneCount >= 3 ? "🎬 Production" : doneCount > 0 ? "🌱 Started" : "○ Not Started";
-      return `<article class="card ${trackDone(track) ? "gold-glow" : ""}">
-        <div class="row">
-          <div style="flex:1">${input(`ep.tracks.${index}.name`, track.name)}</div>
-          <span class="pill ${trackDone(track) ? "good" : ""}">${status}</span>
-          <button class="btn" data-action="toggle-track" data-index="${index}">${track.collapsed ? "展开" : "收起"}</button>
         </div>
-        <div class="${track.collapsed ? "hidden" : ""}">
-          <div class="stage-row">
-            <div class="stage-line"><span style="width:${clamp((Math.max(0, doneCount - 1) / 6) * 100)}%"></span></div>
-            ${track.stages.map((stage, stageIndex) => `<button class="stage-node ${stage === "✓" ? "done" : stage === "→" ? "mid" : ""}" title="${EP_STAGES[stageIndex]}" data-action="cycle-ep-stage" data-track="${index}" data-stage="${stageIndex}">${stage || ""}</button>`).join("")}
-          </div>
-          <div class="stage-labels">${EP_STAGES.map(stage => `<span>${stage}</span>`).join("")}</div>
-          ${progress(trackCompletion(track))}
-          <div class="field"><label>Notes</label>${input(`ep.tracks.${index}.notes`, track.notes)}</div>
+        <div class="ep-overall-badge">
+          <span class="lbl">OVERALL</span>
+          ${overall}%
         </div>
-      </article>`;
-    }
+      </div>
+    </div>
 
-    function renderReading() {
-      const streak = readingStreak();
-      const todayLog = state.reading.log.find(entry => entry.date === todayStr());
-      const activeBooks = state.reading.books.filter(book => book.status !== "📌 Want to Read");
-      return `<div class="grid">
-        <section class="panel"><h2>📖 ${streak.current} consecutive days ${streak.current >= 3 ? "🔥" : ""}</h2><p class="muted">A sentence in the log is enough to keep the thread alive.</p></section>
-        <section class="panel">
-          <div class="row"><h2>Books</h2><button class="btn" data-action="add-book">＋ Add Book</button></div>
-          <div class="grid">${state.reading.books.map((book, index) => renderBookCard(book, index)).join("")}</div>
-        </section>
-        <section class="panel">
-          <div class="row"><h2>Daily Reading Log</h2><button class="btn" data-action="toggle-reading-log">${todayLog ? "Edit Today's Entry" : "＋ Log Today"}</button></div>
-          <div class="${state.reading.todayOpen ? "" : "hidden"}">
-            <p class="date muted">${todayStr()}</p>
-            ${textarea(`reading.logToday.notes`, todayLog?.notes || "", 'placeholder="What did you read?" rows="3"')}
-            <div class="checks">${activeBooks.map(book => check(`reading.logToday.book.${book.id}`, book.title, todayLog?.bookIds?.includes(book.id))).join("") || `<span class="muted">Start a book to tag it here.</span>`}</div>
-            <button class="btn" data-action="save-reading-log">Save Entry</button>
-          </div>
-          <div class="grid">${state.reading.log.slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0,10).map(entry => `<article class="card">
-            <div class="row"><strong class="date">${entry.date}</strong><span class="pill">${entry.bookIds.map(id => state.reading.books.find(book => book.id === id)?.title).filter(Boolean).join(", ") || "untagged"}</span></div>
-            <p>${escapeHtml(entry.notes)}</p>
-          </article>`).join("") || `<p class="muted">No reading logs yet.</p>`}</div>
-        </section>
-      </div>`;
-    }
-    function renderBookCard(book, index) {
-      const colors = ["#c9a96e","#7eb8a4","#b08dd1","#c47b7b","#72b288"];
-      const percent = clamp((Number(book.read || 0) / Math.max(1, Number(book.pages || 0))) * 100);
-      return `<article class="card">
-        <div class="row">
-          <div class="checks">${colors.map(color => `<button class="book-dot" style="background:${color}" title="${color}" data-action="book-color" data-index="${index}" data-color="${color}"></button>`).join("")}</div>
-          <span class="book-dot" style="background:${book.color}"></span>
-          <button class="btn danger" data-action="delete-book" data-index="${index}">Delete</button>
-        </div>
-        <div class="form-grid">
-          <div class="field"><label>Title</label>${input(`reading.books.${index}.title`, book.title)}</div>
-          <div class="field"><label>Author</label>${input(`reading.books.${index}.author`, book.author)}</div>
-          <div class="field"><label>Year</label>${input(`reading.books.${index}.year`, book.year)}</div>
-          <div><button class="btn" data-action="cycle-book-status" data-index="${index}">${book.status}</button></div>
-        </div>
-        <div class="form-grid">
-          <div class="field"><label>read</label>${input(`reading.books.${index}.read`, book.read, "number", 'min="0"')}</div>
-          <div class="field"><label>total pages</label>${input(`reading.books.${index}.pages`, book.pages, "number", 'min="0"')}</div>
-        </div>
-        ${progress(percent)}
-        <p class="muted">Start: ${book.start || "—"} · End: ${book.end || "—"}</p>
-        <details><summary>Notes ▾</summary>${textarea(`reading.books.${index}.notes`, book.notes)}</details>
-      </article>`;
-    }
+    <h2 class="section-title">Tracks</h2>
+    <div id="ep-tracks"></div>
 
-    function renderWork() {
-      const day = todayStr();
-      const entry = state.work.entries[day] || { summary:"", professor:false, coworker:false, clocked:false };
-      const days = weekdays().slice().reverse();
-      return `<div class="grid">
-        <section class="panel">
-          <h2>${formatDate(day)}</h2>
-          ${textarea(`work.entries.${day}.summary`, entry.summary, 'rows="3" placeholder="今天做了什么..."')}
-          <div class="checks">
-            ${check(`work.entries.${day}.professor`, "📬 Updated professor", entry.professor)}
-            ${check(`work.entries.${day}.coworker`, "🤝 Checked in with coworker", entry.coworker)}
-            ${check(`work.entries.${day}.clocked`, "🎉 Successfully clocked out!", entry.clocked)}
-          </div>
-          <button class="btn" data-action="save-work" ${entry.summary?.trim() ? "" : "disabled"}>${entry.savedAt ? "Update" : "Save Entry"}</button>
-        </section>
-        <section class="grid">${days.map(dayKey => {
-          const item = state.work.entries[dayKey];
-          if (!item?.summary) return "";
-          return `<article class="card" data-action="toggle-work-expand" data-day="${dayKey}">
-            <div class="row"><h3>${shortDate(dayKey)}</h3><span class="date muted">${formatDate(dayKey).split(",")[0]}</span></div>
-            <p class="${item.expanded ? "" : "trunc"}">${escapeHtml(item.summary)}</p>
-            <div class="checks"><span class="pill ${item.professor ? "good" : ""}">Professor</span><span class="pill ${item.coworker ? "good" : ""}">Coworker</span><span class="pill ${item.clocked ? "good" : ""}">Clocked</span></div>
-          </article>`;
-        }).join("") || `<p class="muted">No weekday entries yet.</p>`}</section>
-      </div>`;
-    }
+    <div class="card checklist-box mt24">
+      <h3>EP Checklist</h3>
+      <label class="cb"><input type="checkbox" data-ck="sequence" ${ep.checklist.sequence ? 'checked' : ''}><span class="cb-box"></span> Final track sequence locked</label>
+      <label class="cb"><input type="checkbox" data-ck="artwork" ${ep.checklist.artwork ? 'checked' : ''}><span class="cb-box"></span> EP artwork / visual concept decided</label>
+      <label class="cb"><input type="checkbox" data-ck="mastered" ${ep.checklist.mastered ? 'checked' : ''}><span class="cb-box"></span> All tracks mastered</label>
+      <label class="cb"><input type="checkbox" data-ck="ready" ${ep.checklist.ready ? 'checked' : ''}><span class="cb-box"></span> Ready for release</label>
+    </div>
+  `;
 
-    function renderOrchestration() {
-      const metrics = classMetrics();
-      const allWeeks = [...state.orchestration.weeks.map((week, index) => ({ week, index, extra:false })), ...state.orchestration.extraWeeks.map((week, index) => ({ week, index, extra:true }))];
-      return `<div class="grid">
-        <section class="panel"><h2>${metrics.emailed} assignments emailed  ·  ${metrics.logged} assignments logged  ·  12 Saturdays</h2></section>
-        ${allWeeks.map(item => renderWeekBlock(item.week, item.index, item.extra)).join("")}
-        <button class="btn" data-action="add-extra-session">＋ Add Extra Session</button>
-        <section class="panel">
-          <h2>General Notes — concepts, theory, teacher feedback</h2>
-          ${textarea("orchestration.courseNotes", state.orchestration.courseNotes, 'rows="7"')}
-        </section>
-      </div>`;
-    }
-    function renderWeekBlock(week, index, extra) {
-      const base = extra ? `orchestration.extraWeeks.${index}` : `orchestration.weeks.${index}`;
-      const title = extra ? `Extra Session ${index + 1}` : `Week ${index + 1} · Sat ${shortDate(week.date)}`;
-      return `<section class="panel week-block">
-        <div class="week-head"><strong>${title}</strong>${input(`${base}.topic`, week.topic, "text", 'placeholder="class topic"')}</div>
-        <table class="assignment-table">
-          <thead><tr><th>#</th><th>Desc</th><th>Due</th><th>Status</th><th>Draft</th><th>Rev</th><th>Final</th><th>✉</th><th>Notes</th><th></th></tr></thead>
-          <tbody>${week.assignments.map((assignment, assignmentIndex) => `<tr>
-            <td class="num">${assignmentIndex + 1}</td>
-            <td>${input(`${base}.assignments.${assignmentIndex}.desc`, assignment.desc, "text", 'placeholder="description"')}</td>
-            <td>${input(`${base}.assignments.${assignmentIndex}.due`, assignment.due, "date")}</td>
-            <td>${select(`${base}.assignments.${assignmentIndex}.status`, assignment.status, ["○ Not Started","→ In Progress","✓ Done"])}</td>
-            <td>${check(`${base}.assignments.${assignmentIndex}.draft`, "", assignment.draft)}</td>
-            <td>${check(`${base}.assignments.${assignmentIndex}.revision`, "", assignment.revision)}</td>
-            <td>${check(`${base}.assignments.${assignmentIndex}.final`, "", assignment.final)}</td>
-            <td>${check(`${base}.assignments.${assignmentIndex}.emailed`, "✉", assignment.emailed, "tag")}</td>
-            <td>${input(`${base}.assignments.${assignmentIndex}.notes`, assignment.notes)}</td>
-            <td><button class="btn danger" data-action="delete-assignment" data-extra="${extra}" data-week="${index}" data-assignment="${assignmentIndex}">🗑</button></td>
-          </tr>`).join("")}</tbody>
-        </table>
-        <button class="btn" data-action="add-assignment" data-extra="${extra}" data-week="${index}">＋ Add Assignment</button>
-      </section>`;
-    }
+  // --- top panel handlers ---
+  el.querySelector('#ep-title').addEventListener('input', (e) => {
+    state.ep.title = e.target.value;
+    saveState();
+  });
+  el.querySelector('#ep-concept').addEventListener('input', (e) => {
+    state.ep.concept = e.target.value;
+    saveState();
+  });
+  el.querySelector('#ep-status').addEventListener('change', (e) => {
+    state.ep.status = e.target.value;
+    saveStateMarked();
+  });
 
-    function renderPiano() {
-      const practiced = Object.values(state.piano.practiced).filter(Boolean).length;
-      const streak = pianoStreak();
-      const remaining = summerStats().remaining;
-      const msg = streak.current === 0 ? "Time to sit down at the keys 🎹" : streak.current <= 3 ? "A good start ✨" : streak.current <= 7 ? "Building momentum 🌱" : streak.current <= 14 ? "A solid habit forming 🌟" : streak.current <= 29 ? "Two weeks strong 🔥" : "This is who you are now 🎵";
-      return `<div class="grid">
-        <section class="panel"><h2>🔥 Current streak: ${streak.current} days  |  ⭐ Total: ${practiced} days  |  📅 ${remaining} days remaining</h2><p class="muted">${msg}</p></section>
-        ${renderMonth("June", "2026-06-01", "2026-06-30")}
-        ${renderMonth("July", "2026-07-01", "2026-07-31")}
-        ${renderMonth("August", "2026-08-01", "2026-08-31")}
-        ${renderMonth("September", "2026-09-01", "2026-09-30")}
-      </div>`;
-    }
-    function emojiFor(day) {
-      let seed = 0;
-      for (const char of day) seed += char.charCodeAt(0);
-      return PIANO_EMOJIS[seed % PIANO_EMOJIS.length];
-    }
-    function renderMonth(name, start, end) {
-      const dates = dateRange(start, end);
-      const pad = (asDate(start).getDay() + 6) % 7;
-      return `<section class="panel calendar-month"><h3>${name}</h3><div class="calendar">
-        ${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(day => `<div class="dow">${day}</div>`).join("")}
-        ${Array.from({length: pad}, () => `<div></div>`).join("")}
-        ${dates.map(day => {
-          const valid = day >= START && day <= END;
-          const practiced = state.piano.practiced[day];
-          return `<div class="day-cell ${valid ? "" : "off"} ${practiced ? "done" : ""} ${day === todayStr() ? "today" : ""} ${day > todayStr() ? "future" : ""}" ${valid ? `data-action="toggle-practice" data-day="${day}"` : ""}>
-            <span class="n">${Number(day.slice(8))}</span><span class="emoji">${practiced ? emojiFor(day) : ""}</span>
-          </div>`;
-        }).join("")}
-      </div></section>`;
-    }
+  // --- checklist ---
+  el.querySelectorAll('[data-ck]').forEach(cb => {
+    cb.addEventListener('change', (e) => {
+      state.ep.checklist[e.target.dataset.ck] = e.target.checked;
+      saveStateMarked();
+    });
+  });
 
-    function renderComposition() {
-      return `<div class="grid">
-        <div class="row"><h2>Composition</h2><button class="btn" data-action="add-piece">＋ Add New Piece</button></div>
-        ${state.composition.pieces.map((piece, index) => {
-          const done = piece.tasks.filter(task => task.done).length;
-          return `<article class="card">
-            <div class="row"><h3>${escapeHtml(piece.title)}</h3><button class="btn" data-action="toggle-piece" data-index="${index}">${piece.collapsed ? "展开" : "收起"}</button></div>
-            <div class="${piece.collapsed ? "hidden" : ""}">
-              <div class="form-grid">
-                <div class="field"><label>Title</label>${input(`composition.pieces.${index}.title`, piece.title)}</div>
-                <div class="field"><label>Instrumentation</label>${input(`composition.pieces.${index}.instrumentation`, piece.instrumentation)}</div>
-                <div class="field"><label>Status</label>${select(`composition.pieces.${index}.status`, piece.status, ["○ Sketching","→ In Progress","✎ Revising","🎙 Ready for Recording","✅ Complete"])}</div>
-                <div class="field"><label>Target</label>${input(`composition.pieces.${index}.target`, piece.target, "date")}</div>
-              </div>
-              <p class="num">${done} / ${piece.tasks.length} tasks</p>${progress((done / Math.max(1, piece.tasks.length)) * 100)}
-              <div class="grid">${piece.tasks.map((task, taskIndex) => `<div class="row">
-                ${check(`composition.pieces.${index}.tasks.${taskIndex}.done`, "", task.done)}
-                <div style="flex:1">${input(`composition.pieces.${index}.tasks.${taskIndex}.text`, task.text, "text", task.done ? 'style="text-decoration:line-through;opacity:.6"' : "")}</div>
-                <button class="btn danger" data-action="delete-task" data-piece="${index}" data-task="${taskIndex}">×</button>
-              </div>`).join("")}</div>
-              <button class="btn" data-action="add-task" data-index="${index}">＋ Add task</button>
-              <details><summary>Diary</summary>${textarea(`composition.pieces.${index}.diary`, piece.diary, 'rows="5"')}</details>
-              <button class="btn danger" data-action="delete-piece" data-index="${index}">Delete piece</button>
+  // --- tracks ---
+  const tracksWrap = el.querySelector('#ep-tracks');
+  ep.tracks.forEach((track, ti) => {
+    const collapsed = !!epCollapsed[ti];
+    const statusInfo = trackStatusInfo(track);
+    const pct = trackCompletionPct(track);
+    const allDone = track.stages.every(s => s === '✓');
+    const lastDoneIdx = track.stages.lastIndexOf('✓');
+
+    const card = document.createElement('div');
+    card.className = 'card track-card' + (allDone ? ' glow' : '');
+    card.innerHTML = `
+      <div class="tc-header">
+        <input type="text" class="tc-name" value="${escapeHtml(track.name)}">
+        <span class="pill ${statusInfo.cls}">${escapeHtml(statusInfo.label)}</span>
+        <button class="tc-collapse-btn" type="button">${collapsed ? '▸' : '▾'}</button>
+      </div>
+      <div class="tc-body" style="${collapsed ? 'display:none;' : ''}">
+        <div class="stage-pipeline">
+          ${track.stages.map((s, si) => `
+            <div class="stage-node-wrap">
+              <div class="stage-connector ${si > 0 && si <= lastDoneIdx ? 'filled' : ''}"></div>
+              <div class="stage-node ${s === '→' ? 'in-progress' : (s === '✓' ? 'done' : '')}" data-si="${si}">${s}</div>
+              <div class="stage-label">${STAGE_NAMES[si]}</div>
             </div>
-          </article>`;
-        }).join("")}
-      </div>`;
-    }
+          `).join('')}
+        </div>
+        <div class="progress-track mt8"><div class="progress-fill" style="width:${pct}%;"></div></div>
+        <input type="text" class="tc-notes-input" placeholder="Notes..." value="${escapeHtml(track.notes)}">
+      </div>
+    `;
 
-    function renderStudy() {
-      const statuses = ["○ Not Started","👂 Listening","🔍 Analyzing","📝 Notes Written","✅ Complete"];
-      const y = state.study.works.filter(work => work.composer === "yoshimatsu");
-      const t = state.study.works.filter(work => work.composer === "takemitsu");
-      const done = state.study.works.filter(work => work.status === "✅ Complete").length;
-      return `<div class="grid">
-        <section class="panel"><h2>${done} / 13 works analyzed</h2>${progress((done/13)*100)}</section>
-        ${renderStudyGroup("吉松隆 Yoshimatsu", y, statuses)}
-        ${renderStudyGroup("武満徹 Takemitsu", t, statuses)}
-        <button class="btn" data-action="add-study-work">＋ Add Work</button>
-      </div>`;
-    }
-    function renderStudyGroup(title, works, statuses) {
-      return `<section class="panel"><h2>${title}</h2><div class="grid">${works.map(work => {
-        const index = state.study.works.findIndex(item => item.id === work.id);
-        return `<article class="card">
-          <div class="row"><h3>${escapeHtml(work.title)}</h3><span class="pill">${work.composer}</span></div>
-          <p class="muted">${escapeHtml(work.focus)}</p>
-          <div class="form-grid">
-            <div class="field"><label>Status</label>${select(`study.works.${index}.status`, work.status, statuses)}</div>
-            <div class="field"><label>Date</label>${input(`study.works.${index}.date`, work.date || "", "date")}</div>
-          </div>
-          <details><summary>Analysis notes</summary>${textarea(`study.works.${index}.notes`, work.notes, 'rows="5"')}</details>
-        </article>`;
-      }).join("")}</div></section>`;
-    }
-
-    function renderFuture() {
-      const totalHours = state.future.weeklyHours.reduce((sum, week) => sum + Number(week.hours || 0), 0);
-      return `<div class="grid">
-        <section class="panel"><h2>Career Exploration</h2>${textarea("future.careerNotes", state.future.careerNotes, 'rows="5" placeholder="Music industry, other fields, things to look into"')}
-          <div class="grid">${state.future.explore.map((item, index) => `<div class="row">${check(`future.explore.${index}.done`, "", item.done)}<div style="flex:1">${input(`future.explore.${index}.text`, item.text)}</div></div>`).join("")}</div>
-          <button class="btn" data-action="add-explore">＋ Add item</button>
-        </section>
-        <section class="panel"><h2>Workday — Weekly Hours Log</h2>
-          <div class="grid">${state.future.weeklyHours.map((week, index) => `<div class="card">
-            <div class="row"><strong>Week ${week.week}</strong><span class="date muted">${week.period}</span></div>
-            <div class="form-grid"><div class="field"><label>Hours</label>${input(`future.weeklyHours.${index}.hours`, week.hours ?? "", "number", 'min="0"')}</div><div class="field"><label>Notes</label>${input(`future.weeklyHours.${index}.notes`, week.notes)}</div></div>
-          </div>`).join("")}</div>
-          <p class="num">Total hours logged: ${totalHours}</p>
-        </section>
-        <section class="panel"><h2>Research — VR & Amblyopia</h2>
-          <div class="field"><label>Status</label>${select("future.vrStatus", state.future.vrStatus, ["○ Not Started","→ Background Reading","🔬 Actively Researching","✍ Writing Up"])}</div>
-          <div class="checks">
-            ${check("future.vrChecklist.lit", "Read background literature on amblyopia treatment", state.future.vrChecklist.lit)}
-            ${check("future.vrChecklist.research", "Review VR therapy research", state.future.vrChecklist.research)}
-            ${check("future.vrChecklist.self", "Explore self-treatment approaches", state.future.vrChecklist.self)}
-            ${check("future.vrChecklist.consult", "Talk to relevant people / consult professionals", state.future.vrChecklist.consult)}
-          </div>
-          ${textarea("future.vrNotes", state.future.vrNotes, 'rows="5"')}
-        </section>
-        <section class="panel"><h2>Blog / Podcast (?)</h2>
-          <div class="field"><label>Status</label>${select("future.blogStatus", state.future.blogStatus, ["💭 Just an idea","🧭 Planning","🎙 In Progress"])}</div>
-          ${textarea("future.blogNotes", state.future.blogNotes, 'rows="5"')}
-        </section>
-        <section class="panel"><h2>Open Notes</h2>${textarea("future.openNotes", state.future.openNotes, 'rows="8"')}<p class="muted" style="text-align:right">${state.future.openNotes.length} characters</p></section>
-      </div>`;
-    }
-
-    function cycle(value, options) {
-      return options[(options.indexOf(value) + 1) % options.length];
-    }
-    function assignmentList(extra, weekIndex) {
-      return extra === "true" || extra === true ? state.orchestration.extraWeeks[weekIndex].assignments : state.orchestration.weeks[weekIndex].assignments;
-    }
-    function showBurst(x, y) {
-      ["🎉","✨","🌟"].forEach((emoji, index) => {
-        const span = document.createElement("span");
-        span.className = "burst";
-        span.textContent = emoji;
-        span.style.left = `${x + index * 18}px`;
-        span.style.top = `${y}px`;
-        document.body.appendChild(span);
-        setTimeout(() => span.remove(), 950);
+    card.querySelector('.tc-name').addEventListener('input', (e) => {
+      track.name = e.target.value;
+      saveState();
+    });
+    card.querySelector('.tc-collapse-btn').addEventListener('click', () => {
+      epCollapsed[ti] = !epCollapsed[ti];
+      renderEPMain(el);
+    });
+    card.querySelectorAll('.stage-node').forEach(node => {
+      node.addEventListener('click', () => {
+        const si = parseInt(node.dataset.si, 10);
+        const cur = track.stages[si];
+        const idx = STAGE_CYCLE.indexOf(cur);
+        track.stages[si] = STAGE_CYCLE[(idx + 1) % STAGE_CYCLE.length];
+        saveStateMarked();
+        renderEPMain(el);
+      });
+    });
+    const notesInput = card.querySelector('.tc-notes-input');
+    if (notesInput) {
+      notesInput.addEventListener('input', (e) => {
+        track.notes = e.target.value;
+        saveState();
       });
     }
-    function showMilestone(streak) {
-      const div = document.createElement("div");
-      div.className = "milestone";
-      div.textContent = `🎉 ${streak}-day streak!`;
-      document.body.appendChild(div);
-      setTimeout(() => div.remove(), 1900);
+
+    tracksWrap.appendChild(card);
+  });
+}
+
+// ============================================================
+// TAB 2 — 读书 Reading
+// ============================================================
+let bookNotesOpen = {};       // transient: { bookId: bool }
+let scrollToBookId = null;    // transient: id to scroll into view after render
+let movieNotesOpen = {};      // transient: { movieId: bool }
+let scrollToMovieId = null;   // transient: id to scroll into view after render
+
+function daysLoggedForBook(book){
+  if (!book.start) return 0;
+  const start = strToDate(book.start);
+  const end = book.end ? strToDate(book.end) : new Date();
+  return Math.max(1, Math.floor((end - start) / 86400000) + 1);
+}
+
+function deriveBookStatus(book){
+  const pages = Number(book.pages) || 0;
+  const read = Number(book.read) || 0;
+  let status;
+  if (pages > 0 && read >= pages) status = '✅ Completed';
+  else if (read > 0) status = '📖 Reading';
+  else status = '📌 Want to Read';
+
+  if (status !== book.status) {
+    book.status = status;
+    if (status === '📖 Reading' && !book.start) book.start = todayStr();
+    if (status === '✅ Completed') {
+      if (!book.end) book.end = todayStr();
+      if (book.completedDays == null) book.completedDays = daysLoggedForBook(book);
+    }
+  }
+}
+
+function renderReading(el){
+  const reading = state.reading;
+  const streak = getReadingStreak();
+
+  el.innerHTML = `
+    <h2 class="section-title">影视书籍</h2>
+    <div class="streak-banner">📖 ${streak} consecutive day${streak === 1 ? '' : 's'}${streak >= 3 ? ' 🔥' : ''}</div>
+
+    <div class="row mt24" style="justify-content: space-between;">
+      <h2 class="section-title" style="margin:0;">Books</h2>
+      <button id="add-book-btn" type="button">＋ Add Book</button>
+    </div>
+    <div id="book-list"></div>
+
+    <div class="row mt24" style="justify-content: space-between;">
+      <h2 class="section-title" style="margin:0;">Movies</h2>
+      <button id="add-movie-btn" type="button">＋ Add Movie</button>
+    </div>
+    <div id="movie-list"></div>
+  `;
+
+  // ---- books ----
+  const bookList = el.querySelector('#book-list');
+  reading.books.forEach((book, bi) => {
+    deriveBookStatus(book);
+    const card = document.createElement('div');
+    card.className = 'card book-card';
+    card.dataset.bookId = book.id;
+    const notesOpen = !!bookNotesOpen[book.id];
+    const pagesNum = Number(book.pages) || 0;
+    const readNum = Number(book.read) || 0;
+    const pct = pagesNum > 0 ? clamp(Math.round(readNum / pagesNum * 100), 0, 100) : 0;
+
+    let daysNote = '';
+    if (book.status === '📖 Reading') {
+      daysNote = `<div class="small muted">📅 已读 ${daysLoggedForBook(book)} 天</div>`;
+    } else if (book.status === '✅ Completed') {
+      const days = book.completedDays != null ? book.completedDays : daysLoggedForBook(book);
+      daysNote = `<div class="small muted">📅 共读了 ${days} 天</div>`;
     }
 
-    document.addEventListener("click", event => {
-      const tab = event.target.closest("[data-tab]");
-      if (tab) {
-        state.activeTab = Number(tab.dataset.tab);
-        save(false);
-        render();
-        return;
+    card.innerHTML = `
+      <div class="row wrap">
+        <span class="pill book-status-pill" title="基于「读了多少页 / 总页数」自动判定">${escapeHtml(book.status)}</span>
+        <span class="spacer"></span>
+        <button type="button" class="btn-danger btn-sm book-delete-btn">Delete</button>
+      </div>
+      <div class="book-row-inputs">
+        <input type="text" class="book-title-input title-input" placeholder="Title" value="${escapeHtml(book.title)}">
+        <input type="text" class="book-author-input" placeholder="Author" value="${escapeHtml(book.author)}">
+        <input type="text" class="year-input book-year-input" placeholder="Year" value="${escapeHtml(book.year)}">
+      </div>
+      <div class="book-progress-row">
+        <span class="small muted">read</span>
+        <input type="number" class="book-read-input" min="0" value="${readNum}">
+        <span class="small muted">/</span>
+        <input type="number" class="book-pages-input" min="0" value="${pagesNum}">
+        <span class="small muted">pages</span>
+        <div class="progress-track" style="flex:1;"><div class="progress-fill" style="width:${pct}%;"></div></div>
+        <span class="small mono muted">${pct}%</span>
+      </div>
+      <button type="button" class="collapsible-toggle book-notes-toggle">${notesOpen ? '▾' : '▸'} Notes</button>
+      <textarea class="book-notes-textarea" rows="3" placeholder="Notes..." style="${notesOpen ? '' : 'display:none;'}">${escapeHtml(book.notes)}</textarea>
+      ${daysNote}
+    `;
+
+    // title/author/year
+    card.querySelector('.book-title-input').addEventListener('input', (e) => { book.title = e.target.value; saveState(); });
+    card.querySelector('.book-author-input').addEventListener('input', (e) => { book.author = e.target.value; saveState(); });
+    card.querySelector('.book-year-input').addEventListener('input', (e) => { book.year = e.target.value; saveState(); });
+    // progress
+    card.querySelector('.book-read-input').addEventListener('input', (e) => {
+      book.read = e.target.value === '' ? 0 : Number(e.target.value);
+      deriveBookStatus(book);
+      reading.activeDays[todayStr()] = true;
+      saveStateMarked();
+      renderReading(el);
+    });
+    card.querySelector('.book-pages-input').addEventListener('input', (e) => {
+      book.pages = e.target.value === '' ? 0 : Number(e.target.value);
+      deriveBookStatus(book);
+      saveState();
+      renderReading(el);
+    });
+    // notes toggle
+    card.querySelector('.book-notes-toggle').addEventListener('click', () => {
+      bookNotesOpen[book.id] = !notesOpen;
+      renderReading(el);
+    });
+    card.querySelector('.book-notes-textarea').addEventListener('input', (e) => {
+      book.notes = e.target.value;
+      saveState();
+    });
+    // delete
+    card.querySelector('.book-delete-btn').addEventListener('click', () => {
+      if (confirm(`Delete "${book.title || 'this book'}"? This cannot be undone.`)) {
+        reading.books.splice(bi, 1);
+        saveState();
+        renderReading(el);
       }
-      const el = event.target.closest("[data-action]");
-      if (!el) return;
-      const action = el.dataset.action;
-      if (action === "cycle-ep-stage") {
-        const track = state.ep.tracks[Number(el.dataset.track)];
-        const stageIndex = Number(el.dataset.stage);
-        track.stages[stageIndex] = cycle(track.stages[stageIndex], EP_STAGE_VALUES);
-      }
-      if (action === "toggle-track") state.ep.tracks[Number(el.dataset.index)].collapsed = !state.ep.tracks[Number(el.dataset.index)].collapsed;
-      if (action === "add-book") state.reading.books.push({ id: state.reading.nextBookId++, title:"", author:"", year:"", pages:0, read:0, status:"📌 Want to Read", notes:"", start:null, end:null, color:"#c9a96e" });
-      if (action === "delete-book" && confirm("Delete this book?")) state.reading.books.splice(Number(el.dataset.index), 1);
-      if (action === "book-color") state.reading.books[Number(el.dataset.index)].color = el.dataset.color;
-      if (action === "cycle-book-status") {
-        const book = state.reading.books[Number(el.dataset.index)];
-        book.status = cycle(book.status, ["📌 Want to Read","📖 Reading","✅ Completed"]);
-        if (book.status === "📖 Reading" && !book.start) book.start = todayStr();
-        if (book.status === "✅ Completed") book.end = todayStr();
-      }
-      if (action === "toggle-reading-log") state.reading.todayOpen = !state.reading.todayOpen;
-      if (action === "save-reading-log") {
-        const day = todayStr();
-        const existing = state.reading.log.find(entry => entry.date === day);
-        const bookIds = state.reading.books.filter(book => getPath(`reading.logToday.book.${book.id}`)).map(book => book.id);
-        const notes = getPath("reading.logToday.notes") || "";
-        if (existing) { existing.bookIds = bookIds; existing.notes = notes; }
-        else state.reading.log.push({ id: Date.now(), date: day, bookIds, notes });
-        state.reading.todayOpen = false;
-      }
-      if (action === "save-work") {
-        const entry = state.work.entries[todayStr()];
-        if (entry) entry.savedAt = new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
-      }
-      if (action === "toggle-work-expand") {
-        const entry = state.work.entries[el.dataset.day];
-        if (entry) entry.expanded = !entry.expanded;
-      }
-      if (action === "add-assignment") assignmentList(el.dataset.extra, Number(el.dataset.week)).push(assignmentTemplate());
-      if (action === "delete-assignment" && confirm("Delete this assignment row?")) assignmentList(el.dataset.extra, Number(el.dataset.week)).splice(Number(el.dataset.assignment), 1);
-      if (action === "add-extra-session") state.orchestration.extraWeeks.push(weekTemplate(todayStr()));
-      if (action === "toggle-practice") {
-        const day = el.dataset.day;
-        state.piano.practiced[day] = !state.piano.practiced[day];
-        const current = pianoStreak().current;
-        if (state.piano.practiced[day]) showBurst(event.clientX, event.clientY);
-        if ([7,14,30,50].includes(current) && state.piano.lastMilestone !== current) {
-          state.piano.lastMilestone = current;
-          showMilestone(current);
-        }
-      }
-      if (action === "add-piece") state.composition.pieces.push({ id: state.composition.nextPieceId++, title:"New piece", instrumentation:"", status:"○ Sketching", target:"", tasks:[], diary:"", collapsed:false });
-      if (action === "toggle-piece") state.composition.pieces[Number(el.dataset.index)].collapsed = !state.composition.pieces[Number(el.dataset.index)].collapsed;
-      if (action === "add-task") state.composition.pieces[Number(el.dataset.index)].tasks.push({ text:"", done:false });
-      if (action === "delete-task") state.composition.pieces[Number(el.dataset.piece)].tasks.splice(Number(el.dataset.task), 1);
-      if (action === "delete-piece" && confirm("Delete this piece?")) state.composition.pieces.splice(Number(el.dataset.index), 1);
-      if (action === "add-study-work") state.study.works.push({ id: state.study.nextWorkId++, composer:"other", title:"New work", focus:"", status:"○ Not Started", date:null, notes:"" });
-      if (action === "add-explore") state.future.explore.push({ id: state.future.exploreNextId++, text:"", done:false });
-      save();
-      render();
     });
 
-    document.addEventListener("input", event => {
-      const path = event.target.dataset.path;
-      if (!path) return;
-      const value = event.target.type === "number" ? (event.target.value === "" ? null : Number(event.target.value)) : event.target.value;
-      setPath(path, value);
-      debouncedSave(false);
+    bookList.appendChild(card);
+  });
+
+  if (scrollToBookId !== null) {
+    const target = bookList.querySelector(`[data-book-id="${scrollToBookId}"]`);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    scrollToBookId = null;
+  }
+
+  el.querySelector('#add-book-btn').addEventListener('click', () => {
+    const newBook = {
+      id: reading.nextBookId++,
+      title: '', author: '', year: '', pages: 0, read: 0,
+      status: '📌 Want to Read', notes: '', start: null, end: null
+    };
+    reading.books.push(newBook);
+    scrollToBookId = newBook.id;
+    saveState();
+    renderReading(el);
+  });
+
+  // ---- movies ----
+  const movieList = el.querySelector('#movie-list');
+  reading.movies.forEach((movie, mi) => {
+    const card = document.createElement('div');
+    card.className = 'card book-card';
+    card.dataset.movieId = movie.id;
+    const notesOpen = !!movieNotesOpen[movie.id];
+
+    card.innerHTML = `
+      <div class="row wrap">
+        <label class="cb"><input type="checkbox" class="movie-watched-cb" ${movie.watched ? 'checked' : ''}><span class="cb-box"></span> ✅ Watched</label>
+        <span class="spacer"></span>
+        <button type="button" class="btn-danger btn-sm movie-delete-btn">Delete</button>
+      </div>
+      <div class="book-row-inputs">
+        <input type="text" class="movie-title-input title-input" placeholder="Title" value="${escapeHtml(movie.title)}">
+        <input type="text" class="movie-director-input" placeholder="Director" value="${escapeHtml(movie.director)}">
+        <input type="text" class="year-input movie-year-input" placeholder="Year" value="${escapeHtml(movie.year)}">
+      </div>
+      <button type="button" class="collapsible-toggle movie-notes-toggle">${notesOpen ? '▾' : '▸'} Notes</button>
+      <textarea class="movie-notes-textarea" rows="3" placeholder="Notes..." style="${notesOpen ? '' : 'display:none;'}">${escapeHtml(movie.notes)}</textarea>
+    `;
+
+    card.querySelector('.movie-watched-cb').addEventListener('change', (e) => { movie.watched = e.target.checked; saveStateMarked(); });
+    card.querySelector('.movie-title-input').addEventListener('input', (e) => { movie.title = e.target.value; saveState(); });
+    card.querySelector('.movie-director-input').addEventListener('input', (e) => { movie.director = e.target.value; saveState(); });
+    card.querySelector('.movie-year-input').addEventListener('input', (e) => { movie.year = e.target.value; saveState(); });
+    card.querySelector('.movie-notes-toggle').addEventListener('click', () => {
+      movieNotesOpen[movie.id] = !notesOpen;
+      renderReading(el);
     });
-    document.addEventListener("change", event => {
-      const path = event.target.dataset.path;
-      if (!path) return;
-      const value = event.target.type === "checkbox" ? event.target.checked : event.target.type === "number" ? (event.target.value === "" ? null : Number(event.target.value)) : event.target.value;
-      setPath(path, value);
-      if (path.endsWith(".clocked") && value) showBurst(event.clientX || window.innerWidth / 2, event.clientY || 120);
-      if (path.includes("study.works") && path.endsWith(".status") && value === "✅ Complete") {
-        const index = Number(path.split(".")[2]);
-        state.study.works[index].date = todayStr();
+    card.querySelector('.movie-notes-textarea').addEventListener('input', (e) => {
+      movie.notes = e.target.value;
+      saveState();
+    });
+    card.querySelector('.movie-delete-btn').addEventListener('click', () => {
+      if (confirm(`Delete "${movie.title || 'this movie'}"? This cannot be undone.`)) {
+        reading.movies.splice(mi, 1);
+        saveState();
+        renderReading(el);
       }
-      save();
-      render();
-    });
-    document.addEventListener("keydown", event => {
-      if ((event.ctrlKey || event.metaKey) && /^[1-9]$/.test(event.key)) {
-        state.activeTab = Number(event.key) - 1;
-        save(false);
-        render();
-      }
-    });
-    $("exportBtn").addEventListener("click", () => {
-      const blob = new Blob([JSON.stringify(state, null, 2)], { type:"application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "summer2026.json";
-      a.click();
-      URL.revokeObjectURL(url);
-    });
-    $("importFile").addEventListener("change", event => {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const parsed = JSON.parse(reader.result);
-          if (!parsed.ep || !parsed.reading || !parsed.orchestration) throw new Error("Invalid summer2026 data");
-          state = deepMerge(normalizeDefaults(DEFAULTS), parsed);
-          save();
-          render();
-        } catch (error) {
-          alert(`Import failed: ${error.message}`);
-        }
-      };
-      reader.readAsText(file);
-    });
-    $("resetBtn").addEventListener("click", () => {
-      if (!confirm("Reset all saved data?")) return;
-      if (!confirm("Confirm reset to defaults?")) return;
-      state = normalizeDefaults(DEFAULTS);
-      save();
-      render();
     });
 
-    loadState();
-    render();
-  </script>
+    movieList.appendChild(card);
+  });
+
+  if (scrollToMovieId !== null) {
+    const target = movieList.querySelector(`[data-movie-id="${scrollToMovieId}"]`);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    scrollToMovieId = null;
+  }
+
+  el.querySelector('#add-movie-btn').addEventListener('click', () => {
+    const newMovie = {
+      id: reading.nextMovieId++,
+      title: '', director: '', year: '',
+      watched: false, notes: ''
+    };
+    reading.movies.push(newMovie);
+    scrollToMovieId = newMovie.id;
+    saveState();
+    renderReading(el);
+  });
+}
+
+// ============================================================
+// TAB 3 — 工作 Work Log
+// ============================================================
+let workExpanded = {}; // transient: { date: bool }
+let workSelectedDay = null; // transient: null = today, else a "YYYY-MM-DD" override
+
+function getWorkSelectedDay(){
+  return workSelectedDay || todayStr();
+}
+
+function getWorkEntry(dateStr, createIfMissing){
+  let entry = state.work.entries[dateStr];
+  if (!entry && createIfMissing) {
+    entry = { summary: '', professor: false, coworker: false, clocked: false };
+    state.work.entries[dateStr] = entry;
+  }
+  return entry;
+}
+
+function syncWorkDraftFromDom(root = document, flush = false){
+  const summaryInput = root.querySelector ? root.querySelector('#work-summary') : null;
+  if (!summaryInput) return;
+  const today = getWorkSelectedDay();
+  const entry = getWorkEntry(today, true);
+  entry.summary = summaryInput.value;
+  const professor = root.querySelector('#work-cb-professor');
+  const coworker = root.querySelector('#work-cb-coworker');
+  const clocked = root.querySelector('#work-cb-clocked');
+  if (professor) entry.professor = professor.checked;
+  if (coworker) entry.coworker = coworker.checked;
+  if (clocked) entry.clocked = clocked.checked;
+  if (flush && saveState.flush) {
+    saveState.flush();
+  } else {
+    saveState();
+  }
+}
+
+function spawnEmojiBurst(anchorEl){
+  if (!anchorEl) return;
+  const emojis = ['🎉', '✨', '🌟'];
+  emojis.forEach((em, i) => {
+    const span = document.createElement('span');
+    span.className = 'emoji-pop';
+    span.textContent = em;
+    span.style.left = (i * 16) + 'px';
+    span.style.top = '-4px';
+    span.style.animationDelay = (i * 0.08) + 's';
+    anchorEl.appendChild(span);
+    setTimeout(() => span.remove(), 1300);
+  });
+}
+
+function renderWork(el){
+  const today = getWorkSelectedDay();
+  const isToday = today === todayStr();
+  const existing = state.work.entries[today];
+  const hasEntry = !!(existing && existing.summary && existing.summary.trim() !== '');
+
+  el.innerHTML = `
+    <h2 class="section-title">工作 Work Log</h2>
+    <div class="card today-panel">
+      <div class="row" style="justify-content: space-between;">
+        <h3 style="margin:0;">${escapeHtml(formatDateLong(today))}</h3>
+        <span class="row" style="gap:6px;">
+          <input type="date" id="work-day-picker" value="${today}" min="${dateToStr(SUMMER_START)}" max="${dateToStr(SUMMER_END)}" style="width:auto;">
+          ${isToday ? '' : '<button type="button" id="work-today-btn" class="btn-sm">Today</button>'}
+        </span>
+      </div>
+      <textarea id="work-summary" class="mt16" rows="3" placeholder="今天做了什么...">${escapeHtml(existing ? existing.summary : '')}</textarea>
+      <div class="row wrap mt12" style="gap:18px;">
+        <label class="cb"><input type="checkbox" id="work-cb-professor" ${existing && existing.professor ? 'checked' : ''}><span class="cb-box"></span> 📬 Updated professor</label>
+        <label class="cb"><input type="checkbox" id="work-cb-coworker" ${existing && existing.coworker ? 'checked' : ''}><span class="cb-box"></span> 🤝 Checked in with coworker</label>
+        <label class="cb emoji-burst" id="work-cb-clocked-wrap"><input type="checkbox" id="work-cb-clocked" ${existing && existing.clocked ? 'checked' : ''}><span class="cb-box"></span> 🎉 Successfully clocked out!</label>
+      </div>
+      <button type="button" id="work-save-btn" class="mt12">${hasEntry ? 'Update' : 'Save Entry'}</button>
+    </div>
+
+    <h2 class="section-title">History</h2>
+    <div id="work-history"></div>
+  `;
+
+  const summaryInput = el.querySelector('#work-summary');
+  const saveBtn = el.querySelector('#work-save-btn');
+  const dayPicker = el.querySelector('#work-day-picker');
+  const todayBtn = el.querySelector('#work-today-btn');
+
+  dayPicker.addEventListener('change', () => {
+    workSelectedDay = dayPicker.value || null;
+    renderWork(el);
+  });
+  if (todayBtn) {
+    todayBtn.addEventListener('click', () => {
+      workSelectedDay = null;
+      renderWork(el);
+    });
+  }
+
+  function syncSaveBtn(){
+    saveBtn.disabled = summaryInput.value.trim() === '';
+  }
+  syncSaveBtn();
+  summaryInput.addEventListener('input', () => {
+    syncSaveBtn();
+    syncWorkDraftFromDom(el);
+  });
+  summaryInput.addEventListener('blur', () => {
+    syncWorkDraftFromDom(el, true);
+  });
+
+  saveBtn.addEventListener('click', () => {
+    syncWorkDraftFromDom(el, true);
+    renderWork(el);
+  });
+
+  ['#work-cb-professor', '#work-cb-coworker', '#work-cb-clocked'].forEach(sel => {
+    const cb = el.querySelector(sel);
+    if (!cb) return;
+    cb.addEventListener('change', () => {
+      syncWorkDraftFromDom(el, true);
+    });
+  });
+
+  el.querySelector('#work-cb-clocked').addEventListener('change', (e) => {
+    if (e.target.checked) {
+      spawnEmojiBurst(el.querySelector('#work-cb-clocked-wrap'));
+    }
+  });
+
+  // ---- history: weekdays only, newest first ----
+  const historyWrap = el.querySelector('#work-history');
+  const dates = WEEKDAY_DATES.slice().reverse();
+  dates.forEach(ds => {
+    const entry = state.work.entries[ds];
+    if (!entry || (!entry.summary && !entry.professor && !entry.coworker && !entry.clocked)) return;
+    const expanded = !!workExpanded[ds];
+    const card = document.createElement('div');
+    card.className = 'card work-history-card';
+    card.innerHTML = `
+      <div class="row" style="justify-content: space-between;">
+        <strong class="mono">${escapeHtml(formatDate(ds))}</strong>
+        <span class="row" style="gap:8px;">
+          <button type="button" class="btn-sm btn-danger work-history-delete" title="Delete this history entry">Delete</button>
+          <span class="muted small">${expanded ? '▾' : '▸'}</span>
+        </span>
+      </div>
+      <div class="wh-summary ${expanded ? '' : 'truncated'}">${escapeHtml(entry.summary || '(no summary)')}</div>
+      <div class="row wrap mt8" style="gap:6px;">
+        <span class="pill ${entry.professor ? 'pill-green' : 'pill-gray'}">📬 professor</span>
+        <span class="pill ${entry.coworker ? 'pill-green' : 'pill-gray'}">🤝 coworker</span>
+        <span class="pill ${entry.clocked ? 'pill-green' : 'pill-gray'}">🎉 clocked out</span>
+      </div>
+    `;
+    card.querySelector('.work-history-delete').addEventListener('click', (e) => {
+      e.stopPropagation();
+      syncWorkDraftFromDom(el, true);
+      if (confirm(`Delete work log for ${formatDateLong(ds)}? This cannot be undone.`)) {
+        delete state.work.entries[ds];
+        delete workExpanded[ds];
+        persistNow();
+        renderWork(el);
+      }
+    });
+    card.addEventListener('click', () => {
+      syncWorkDraftFromDom(el, true);
+      workExpanded[ds] = !expanded;
+      renderWork(el);
+    });
+    historyWrap.appendChild(card);
+  });
+
+  if (!historyWrap.children.length) {
+    historyWrap.innerHTML = '<p class="muted">No entries logged yet.</p>';
+  }
+}
+
+// ============================================================
+// TAB 4 — 管弦乐课 Orchestration
+// ============================================================
+function formatSatLabel(dateStr){
+  if (!dateStr) return '';
+  const d = strToDate(dateStr);
+  return 'Sat ' + MONTH_NAMES[d.getMonth()] + ' ' + pad2(d.getDate()) + ', ' + d.getFullYear();
+}
+
+function blankAssignment(){
+  return { desc:'', status:'○ Not Started' };
+}
+
+function buildAssignmentTable(week, container, rerender){
+  const table = document.createElement('table');
+  table.className = 'assign-table';
+  table.innerHTML = `
+    <thead><tr>
+      <th class="col-drag"></th><th class="col-num">#</th><th class="col-desc">作业内容</th><th class="col-status">Status</th><th></th>
+    </tr></thead>
+    <tbody></tbody>
+  `;
+  const tbody = table.querySelector('tbody');
+  const descTextareas = [];
+  let dragSrcIndex = null;
+  week.assignments.forEach((a, ai) => {
+    const tr = document.createElement('tr');
+    tr.draggable = true;
+    tr.dataset.index = String(ai);
+    const statusOpts = ASSIGN_STATUS_OPTIONS.map(s =>
+      `<option value="${escapeHtml(s)}" ${s === a.status ? 'selected' : ''}>${escapeHtml(s)}</option>`
+    ).join('');
+    tr.innerHTML = `
+      <td class="col-drag"><span class="drag-handle" title="Drag to reorder">⠿</span></td>
+      <td class="col-num">${ai + 1}</td>
+      <td class="col-desc"><textarea class="a-desc" rows="1" placeholder="作业内容...">${escapeHtml(a.desc)}</textarea></td>
+      <td class="col-status"><select class="a-status">${statusOpts}</select></td>
+      <td class="col-del"><button type="button" class="btn-sm btn-danger a-delete" title="Delete row">🗑</button></td>
+    `;
+    const descTa = tr.querySelector('.a-desc');
+    descTextareas.push(descTa);
+    descTa.addEventListener('input', e => { a.desc = e.target.value; autoGrow(descTa); saveState(); });
+    tr.querySelector('.a-status').addEventListener('change', e => { a.status = e.target.value; saveStateMarked(); });
+    tr.querySelector('.a-delete').addEventListener('click', () => {
+      week.assignments.splice(ai, 1);
+      saveState();
+      rerender();
+    });
+    tr.addEventListener('dragstart', e => {
+      dragSrcIndex = ai;
+      tr.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(ai));
+    });
+    tr.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      tr.classList.add('drag-over');
+    });
+    tr.addEventListener('dragleave', () => {
+      tr.classList.remove('drag-over');
+    });
+    tr.addEventListener('drop', e => {
+      e.preventDefault();
+      tr.classList.remove('drag-over');
+      if (dragSrcIndex === null || dragSrcIndex === ai) return;
+      const moved = week.assignments.splice(dragSrcIndex, 1)[0];
+      week.assignments.splice(ai, 0, moved);
+      dragSrcIndex = null;
+      saveState();
+      rerender();
+    });
+    tr.addEventListener('dragend', () => {
+      dragSrcIndex = null;
+      tbody.querySelectorAll('tr').forEach(row => row.classList.remove('dragging', 'drag-over'));
+    });
+    tbody.appendChild(tr);
+  });
+  container.appendChild(table);
+  requestAnimationFrame(() => descTextareas.forEach(ta => autoGrow(ta)));
+}
+
+function buildWeekBlock(week, label, rerender){
+  const wrap = document.createElement('div');
+  wrap.className = 'week-block';
+  wrap.innerHTML = `
+    <div class="week-head-bar">
+      <span class="wk-label">${escapeHtml(label)}</span>
+      <input type="text" class="week-topic-input" placeholder="Class topic / focus..." value="${escapeHtml(week.topic)}">
+    </div>
+    <div class="week-table-wrap"></div>
+    <div class="week-footer">
+      <button type="button" class="btn-sm add-assignment-btn">＋ Add Assignment</button>
+    </div>
+  `;
+  wrap.querySelector('.week-topic-input').addEventListener('input', (e) => {
+    week.topic = e.target.value;
+    saveState();
+  });
+  buildAssignmentTable(week, wrap.querySelector('.week-table-wrap'), rerender);
+  wrap.querySelector('.add-assignment-btn').addEventListener('click', () => {
+    week.assignments.push(blankAssignment());
+    saveState();
+    rerender();
+  });
+  return wrap;
+}
+
+function renderOrchestration(el){
+  const orch = state.orchestration;
+  const allAssignments = orchAllAssignments();
+  const loggedCount = allAssignments.filter(a => a.desc && a.desc.trim() !== '').length;
+
+  el.innerHTML = `
+    <h2 class="section-title">管弦乐课 Orchestration</h2>
+    <div class="orch-header-bar">${loggedCount} assignments logged&nbsp;&nbsp;·&nbsp;&nbsp;12 Saturdays</div>
+    <div id="orch-weeks"></div>
+    <div class="row mt16">
+      <button type="button" id="add-extra-session-btn">＋ Add Extra Session</button>
+    </div>
+    <h2 class="section-title">Course Notes</h2>
+    <div class="card course-notes">
+      <label class="muted small">General Notes — concepts, theory, teacher feedback</label>
+      <textarea id="orch-course-notes" rows="6" class="mt8">${escapeHtml(orch.courseNotes)}</textarea>
+    </div>
+  `;
+
+  const rerender = () => renderOrchestration(el);
+  const weeksWrap = el.querySelector('#orch-weeks');
+
+  orch.weeks.forEach((week, wi) => {
+    const label = `Week ${wi + 1}  ·  ${formatSatLabel(week.date)}`;
+    weeksWrap.appendChild(buildWeekBlock(week, label, rerender));
+  });
+  orch.extraWeeks.forEach((week, wi) => {
+    const label = `Extra Session ${wi + 1}`;
+    weeksWrap.appendChild(buildWeekBlock(week, label, rerender));
+  });
+
+  el.querySelector('#add-extra-session-btn').addEventListener('click', () => {
+    orch.extraWeeks.push({
+      date: '',
+      topic: '',
+      assignments: Array(5).fill(null).map(blankAssignment)
+    });
+    saveState();
+    renderOrchestration(el);
+  });
+
+  el.querySelector('#orch-course-notes').addEventListener('input', (e) => {
+    orch.courseNotes = e.target.value;
+    saveState();
+  });
+}
+
+// ============================================================
+// TAB 5 — 练琴 Piano
+// ============================================================
+const MILESTONES = [7, 14, 30, 50];
+let milestoneShownFor = new Set();
+
+function showMilestoneBanner(text){
+  const banner = document.getElementById('milestone-banner');
+  if (!banner) return;
+  banner.textContent = text;
+  banner.classList.add('show');
+  clearTimeout(showMilestoneBanner._t);
+  showMilestoneBanner._t = setTimeout(() => banner.classList.remove('show'), 2600);
+}
+function maybeShowMilestone(streak){
+  if (MILESTONES.includes(streak) && !milestoneShownFor.has(streak)) {
+    milestoneShownFor.add(streak);
+    showMilestoneBanner(`🎉 ${streak}-day streak!`);
+  }
+}
+
+
+function buildMonthCalendarDays(year, month){
+  const firstOfMonth = new Date(year, month, 1);
+  const lastOfMonth = new Date(year, month + 1, 0);
+  const start = new Date(firstOfMonth);
+  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+  const end = new Date(lastOfMonth);
+  end.setDate(end.getDate() + ((7 - end.getDay()) % 7));
+  const days = [];
+  const cur = new Date(start);
+  while (cur <= end) {
+    days.push(new Date(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return days;
+}
+
+function buildDayCell(date, el){
+  const ds = dateToStr(date);
+  const inRange = date >= SUMMER_START && date <= SUMMER_END;
+  const now = new Date();
+  const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const isToday = date.getTime() === todayMid.getTime();
+  const isFuture = date.getTime() > todayMid.getTime();
+  const practiced = inRange && !!state.piano.practiced[ds];
+  const exercised = inRange && !!state.piano.exercised[ds];
+
+  const cell = document.createElement('div');
+  let cls = 'cal-cell';
+  if (!inRange) {
+    cls += ' outside';
+    if (isToday) cls += ' today';
+  } else {
+    if (practiced) cls += ' practiced';
+    if (isToday) cls += ' today';
+    if (isFuture) cls += ' future';
+  }
+  cell.className = cls;
+
+  const numSpan = document.createElement('span');
+  numSpan.className = 'cal-daynum';
+  numSpan.textContent = date.getDate();
+  cell.appendChild(numSpan);
+
+  const row = document.createElement('div');
+  row.className = 'cal-emoji-row';
+
+  const pianoHalf = document.createElement('span');
+  pianoHalf.className = 'cal-emoji-half piano' + (practiced ? ' active' : '');
+  pianoHalf.title = '练琴 Piano practice';
+  pianoHalf.textContent = practiced ? seededEmoji(ds) : '🎹';
+  row.appendChild(pianoHalf);
+
+  const exerciseHalf = document.createElement('span');
+  exerciseHalf.className = 'cal-emoji-half exercise' + (exercised ? ' active' : '');
+  exerciseHalf.title = '锻炼 Exercise / posture training';
+  exerciseHalf.textContent = '💪';
+  row.appendChild(exerciseHalf);
+
+  cell.appendChild(row);
+
+  if (inRange) {
+    pianoHalf.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const wasOff = !state.piano.practiced[ds];
+      if (state.piano.practiced[ds]) delete state.piano.practiced[ds];
+      else state.piano.practiced[ds] = true;
+      saveStateMarked();
+      renderPiano(el);
+      if (wasOff) maybeShowMilestone(getPracticedStreak());
+    });
+    exerciseHalf.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (state.piano.exercised[ds]) delete state.piano.exercised[ds];
+      else state.piano.exercised[ds] = true;
+      saveStateMarked();
+      renderPiano(el);
+    });
+  }
+  return cell;
+}
+
+function renderPiano(el){
+  const streak = getPracticedStreak();
+  const total = pianoPracticedCount();
+  const exerciseStreak = getExerciseStreak();
+  const exerciseTotal = pianoExercisedCount();
+  const daysRemaining = getDaysRemaining();
+
+  el.innerHTML = `
+    <h2 class="section-title">Practice</h2>
+    <div class="piano-stats-bar">
+      <span>🔥 Practice streak: ${streak} day${streak === 1 ? '' : 's'}</span>
+      <span class="dim">|</span>
+      <span>⭐ Played piano: ${total} day${total === 1 ? '' : 's'}</span>
+      <span class="dim">|</span>
+      <span>📅 ${daysRemaining} days remaining</span>
+    </div>
+    <div class="piano-stats-bar mt8">
+      <span>💪 Exercise streak: ${exerciseStreak} day${exerciseStreak === 1 ? '' : 's'}</span>
+      <span class="dim">|</span>
+      <span>🏋️ Exercised: ${exerciseTotal} day${exerciseTotal === 1 ? '' : 's'}</span>
+    </div>
+    <p class="dim" style="font-size:13px; margin-top:6px;">点击每日格子里的 🎹 记录练琴，💪 记录体态训练或锻炼。</p>
+    <div id="piano-months"></div>
+  `;
+
+  const monthsWrap = el.querySelector('#piano-months');
+  const months = [
+    { y: 2026, m: 5, name: 'June' },
+    { y: 2026, m: 6, name: 'July' },
+    { y: 2026, m: 7, name: 'August' },
+    { y: 2026, m: 8, name: 'September' }
+  ];
+  const dowLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  months.forEach(mo => {
+    const block = document.createElement('div');
+    block.className = 'month-block';
+    block.innerHTML = `<h3>${mo.name}</h3><div class="cal-grid"></div>`;
+    const grid = block.querySelector('.cal-grid');
+    dowLabels.forEach(l => {
+      const dl = document.createElement('div');
+      dl.className = 'cal-dow';
+      dl.textContent = l;
+      grid.appendChild(dl);
+    });
+    buildMonthCalendarDays(mo.y, mo.m).forEach(date => grid.appendChild(buildDayCell(date, el)));
+    monthsWrap.appendChild(block);
+  });
+}
+
+// ============================================================
+// TAB 6 — 作曲 Composition
+// ============================================================
+let diaryOpen = {}; // transient: { pieceId: bool }
+
+function pieceTaskCounts(piece){
+  const total = piece.tasks.length;
+  const done = piece.tasks.filter(t => t.done).length;
+  return { done, total };
+}
+
+function buildPieceCard(piece, pi, el){
+  const card = document.createElement('div');
+  card.className = 'card piece-card';
+  const counts = pieceTaskCounts(piece);
+  const pct = counts.total > 0 ? Math.round(counts.done / counts.total * 100) : 0;
+  const collapsed = !!piece.collapsed;
+  const diaryIsOpen = !!diaryOpen[piece.id];
+  const statusOpts = COMP_STATUS_OPTIONS.map(s =>
+    `<option value="${escapeHtml(s)}" ${s === piece.status ? 'selected' : ''}>${escapeHtml(s)}</option>`
+  ).join('');
+
+  card.innerHTML = `
+    <div class="pc-header-row">
+      <input type="text" class="piece-title-input" placeholder="Piece title" value="${escapeHtml(piece.title)}">
+      <input type="text" class="piece-instr-input" placeholder="Instrumentation" value="${escapeHtml(piece.instrumentation)}">
+      <select class="piece-status-select">${statusOpts}</select>
+      <button type="button" class="tc-collapse-btn piece-collapse-btn">${collapsed ? '▸' : '▾'}</button>
+    </div>
+    <div class="piece-body" style="${collapsed ? 'display:none;' : ''} margin-top:14px;">
+      <div class="row">
+        <span class="muted small">Target date</span>
+        <input type="date" class="piece-target-input" value="${escapeHtml(piece.target)}">
+      </div>
+      <div class="row mt12">
+        <div class="progress-track" style="flex:1;"><div class="progress-fill" style="width:${pct}%;"></div></div>
+        <span class="small mono muted">${counts.done} / ${counts.total}</span>
+      </div>
+      <div class="task-list mt12"></div>
+      <button type="button" class="btn-sm add-task-btn mt8">＋ Add task</button>
+      <button type="button" class="collapsible-toggle diary-toggle mt16">${diaryIsOpen ? '▾' : '▸'} Diary</button>
+      <textarea class="diary-textarea" rows="4" placeholder="Compositional Diary — ideas, sketches, decisions" style="${diaryIsOpen ? '' : 'display:none;'}">${escapeHtml(piece.diary)}</textarea>
+      <div class="row mt16">
+        <button type="button" class="btn-danger btn-sm delete-piece-btn">Delete Piece</button>
+      </div>
+    </div>
+  `;
+
+  card.querySelector('.piece-title-input').addEventListener('input', e => { piece.title = e.target.value; saveState(); });
+  card.querySelector('.piece-instr-input').addEventListener('input', e => { piece.instrumentation = e.target.value; saveState(); });
+  card.querySelector('.piece-status-select').addEventListener('change', e => { piece.status = e.target.value; saveStateMarked(); });
+  card.querySelector('.piece-collapse-btn').addEventListener('click', () => {
+    piece.collapsed = !piece.collapsed;
+    saveState();
+    renderComposition(el);
+  });
+  card.querySelector('.piece-target-input').addEventListener('change', e => { piece.target = e.target.value; saveState(); });
+  card.querySelector('.diary-toggle').addEventListener('click', () => {
+    diaryOpen[piece.id] = !diaryIsOpen;
+    renderComposition(el);
+  });
+  card.querySelector('.diary-textarea').addEventListener('input', e => { piece.diary = e.target.value; saveState(); });
+  card.querySelector('.delete-piece-btn').addEventListener('click', () => {
+    if (confirm(`Delete "${piece.title || 'this piece'}"? This cannot be undone.`)) {
+      state.composition.pieces.splice(pi, 1);
+      saveState();
+      renderComposition(el);
+    }
+  });
+
+  const taskListEl = card.querySelector('.task-list');
+  let dragSrcIndex = null;
+  piece.tasks.forEach((task, ti) => {
+    const row = document.createElement('div');
+    row.className = 'task-row' + (task.done ? ' done' : '');
+    row.draggable = true;
+    row.dataset.index = String(ti);
+    row.innerHTML = `
+      <span class="drag-handle" title="Drag to reorder">⠿</span>
+      <label class="cb"><input type="checkbox" class="task-done-cb" ${task.done ? 'checked' : ''}><span class="cb-box"></span></label>
+      <input type="text" class="task-text-input" value="${escapeHtml(task.text)}">
+      <button type="button" class="btn-sm btn-danger task-delete-btn" title="Delete task">🗑</button>
+    `;
+    row.querySelector('.task-done-cb').addEventListener('change', e => {
+      task.done = e.target.checked;
+      saveStateMarked();
+      renderComposition(el);
+    });
+    row.querySelector('.task-text-input').addEventListener('input', e => { task.text = e.target.value; saveState(); });
+    row.querySelector('.task-delete-btn').addEventListener('click', () => {
+      piece.tasks.splice(ti, 1);
+      saveState();
+      renderComposition(el);
+    });
+    row.addEventListener('dragstart', e => {
+      dragSrcIndex = ti;
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(ti));
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave', () => {
+      row.classList.remove('drag-over');
+    });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      if (dragSrcIndex === null || dragSrcIndex === ti) return;
+      const moved = piece.tasks.splice(dragSrcIndex, 1)[0];
+      piece.tasks.splice(ti, 0, moved);
+      dragSrcIndex = null;
+      saveState();
+      renderComposition(el);
+    });
+    row.addEventListener('dragend', () => {
+      dragSrcIndex = null;
+      taskListEl.querySelectorAll('.task-row').forEach(r => r.classList.remove('dragging', 'drag-over'));
+    });
+    taskListEl.appendChild(row);
+  });
+
+  card.querySelector('.add-task-btn').addEventListener('click', () => {
+    piece.tasks.push({ text: '', done: false });
+    saveState();
+    renderComposition(el);
+  });
+
+  return card;
+}
+
+function renderComposition(el){
+  const comp = state.composition;
+  el.innerHTML = `
+    <div class="row" style="justify-content: space-between;">
+      <h2 class="section-title" style="margin:0;">作曲 Composition</h2>
+      <button type="button" id="add-piece-btn">＋ Add New Piece</button>
+    </div>
+    <div id="piece-list"></div>
+  `;
+
+  const listWrap = el.querySelector('#piece-list');
+  comp.pieces.forEach((piece, pi) => listWrap.appendChild(buildPieceCard(piece, pi, el)));
+
+  el.querySelector('#add-piece-btn').addEventListener('click', () => {
+    comp.pieces.push({
+      id: comp.nextPieceId++,
+      title: '', instrumentation: '', status: COMP_STATUS_OPTIONS[0], target: '',
+      tasks: [], diary: '', collapsed: false
+    });
+    saveState();
+    renderComposition(el);
+  });
+}
+
+// ============================================================
+// TAB 7 — 作曲家 Composer Study
+// ============================================================
+let studySectionsOpen = { yoshimatsu: true, takemitsu: true }; // transient
+let studyNotesOpen = {}; // transient: { 'w<id>': bool }
+
+function advanceStudyStatus(work, dir){
+  const idx = STUDY_STATUS_OPTIONS.indexOf(work.status);
+  const next = clamp(idx + dir, 0, STUDY_STATUS_OPTIONS.length - 1);
+  work.status = STUDY_STATUS_OPTIONS[next];
+  if (work.status === '✅ Complete' && !work.date) work.date = todayStr();
+}
+
+function buildStudyWorkCard(work, wi, el){
+  const card = document.createElement('div');
+  card.className = 'card study-work-card';
+  const composer = state.study.composers.find(c => c.id === work.composer);
+  const composerPillCls = composer ? composer.pillCls : 'pill-gray';
+  const composerLabel = composer ? composer.name : work.composer;
+  const tags = work.focus ? work.focus.split('·').map(s => s.trim()).filter(Boolean) : [];
+  const notesKey = 'w' + work.id;
+  const notesOpen = !!studyNotesOpen[notesKey];
+  const isComplete = work.status === '✅ Complete';
+  const statusIdx = STUDY_STATUS_OPTIONS.indexOf(work.status);
+
+  card.innerHTML = `
+    <div class="row wrap">
+      <input type="text" class="study-title-input" style="flex:1; min-width:160px; font-weight:600;" value="${escapeHtml(work.title)}" placeholder="Work title">
+      <span class="pill ${composerPillCls}">${composerLabel}</span>
+      <button type="button" class="btn-danger btn-sm study-delete-btn">Delete</button>
+    </div>
+    <div class="row wrap mt8 study-tags" style="gap:6px;"></div>
+    <div class="row wrap mt12">
+      <div class="study-stepper">
+        <button type="button" class="btn-sm study-back-btn" ${statusIdx === 0 ? 'disabled' : ''}>◀</button>
+        <span class="pill">${escapeHtml(work.status)}</span>
+        <button type="button" class="btn-sm study-fwd-btn" ${statusIdx === STUDY_STATUS_OPTIONS.length - 1 ? 'disabled' : ''}>▶</button>
+      </div>
+      ${isComplete ? `<span class="muted small">Completed:</span><input type="date" class="study-date-input" value="${escapeHtml(work.date || '')}">` : ''}
+    </div>
+    <button type="button" class="collapsible-toggle study-notes-toggle mt12">${notesOpen ? '▾' : '▸'} Notes</button>
+    <textarea class="study-notes-textarea" rows="3" placeholder="Notes..." style="${notesOpen ? '' : 'display:none;'}">${escapeHtml(work.notes)}</textarea>
+  `;
+
+  // focus tags
+  const tagsWrap = card.querySelector('.study-tags');
+  function syncFocus(){ work.focus = tags.filter(t => t.trim() !== '').join(' · '); }
+  tags.forEach((tag, ti) => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.innerHTML = `<span class="chip-text">${escapeHtml(tag)}</span><span class="chip-x">✕</span>`;
+    chip.querySelector('.chip-text').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const next = prompt('Edit focus tag', tag);
+      if (next !== null) {
+        tags[ti] = next.trim();
+        syncFocus();
+        saveState();
+        renderStudy(el);
+      }
+    });
+    chip.querySelector('.chip-x').addEventListener('click', (e) => {
+      e.stopPropagation();
+      tags.splice(ti, 1);
+      syncFocus();
+      saveState();
+      renderStudy(el);
+    });
+    tagsWrap.appendChild(chip);
+  });
+  const addTagBtn = document.createElement('button');
+  addTagBtn.type = 'button';
+  addTagBtn.className = 'btn-sm';
+  addTagBtn.textContent = '＋ tag';
+  addTagBtn.addEventListener('click', () => {
+    const val = prompt('New focus tag');
+    if (val !== null && val.trim() !== '') {
+      tags.push(val.trim());
+      syncFocus();
+      saveState();
+      renderStudy(el);
+    }
+  });
+  tagsWrap.appendChild(addTagBtn);
+
+  card.querySelector('.study-title-input').addEventListener('input', e => { work.title = e.target.value; saveState(); });
+  card.querySelector('.study-back-btn').addEventListener('click', () => { advanceStudyStatus(work, -1); saveState(); renderStudy(el); });
+  card.querySelector('.study-fwd-btn').addEventListener('click', () => { advanceStudyStatus(work, 1); saveState(); renderStudy(el); });
+  const dateInput = card.querySelector('.study-date-input');
+  if (dateInput) dateInput.addEventListener('change', e => { work.date = e.target.value; saveState(); });
+  card.querySelector('.study-notes-toggle').addEventListener('click', () => {
+    studyNotesOpen[notesKey] = !notesOpen;
+    renderStudy(el);
+  });
+  card.querySelector('.study-notes-textarea').addEventListener('input', e => { work.notes = e.target.value; saveState(); });
+  card.querySelector('.study-delete-btn').addEventListener('click', () => {
+    if (confirm(`Delete "${work.title || 'this work'}"? This cannot be undone.`)) {
+      state.study.works.splice(wi, 1);
+      saveState();
+      renderStudy(el);
+    }
+  });
+
+  return card;
+}
+
+function renderStudy(el){
+  const works = state.study.works;
+  const composers = state.study.composers;
+  const completedTotal = works.filter(w => w.status === '✅ Complete').length;
+
+  const summaryParts = composers.map(c => {
+    const cw = works.filter(w => w.composer === c.id);
+    const cd = cw.filter(w => w.status === '✅ Complete').length;
+    return `${escapeHtml(c.name)} ${cd}/${cw.length}`;
+  });
+
+  el.innerHTML = `
+    <h2 class="section-title">作曲家 Composer Study</h2>
+    <div class="row wrap" style="justify-content: space-between; align-items: center;">
+      <div class="card mono small" style="flex:1; margin-right:12px;">
+        ${completedTotal} / ${works.length} works analyzed${summaryParts.length ? '&nbsp;&nbsp;·&nbsp;&nbsp;' + summaryParts.join('&nbsp;&nbsp;·&nbsp;&nbsp;') : ''}
+      </div>
+      <button type="button" id="add-composer-btn" class="btn-sm">＋ Add Composer</button>
+    </div>
+    <div id="composer-sections"></div>
+  `;
+
+  el.querySelector('#add-composer-btn').addEventListener('click', () => {
+    const name = prompt('Composer name (e.g., 德彪西 Debussy)');
+    if (name !== null && name.trim() !== '') {
+      const id = 'composer-' + (state.study.nextComposerId++);
+      const pillCls = STUDY_PILL_CLASSES[composers.length % STUDY_PILL_CLASSES.length];
+      composers.push({ id, name: name.trim(), pillCls });
+      studySectionsOpen[id] = true;
+      saveState();
+      renderStudy(el);
+    }
+  });
+
+  const sectionsWrap = el.querySelector('#composer-sections');
+  composers.forEach((c, ci) => {
+    const open = studySectionsOpen[c.id] !== false;
+    const section = document.createElement('div');
+    section.innerHTML = `
+      <div class="study-section-head mt24">
+        <h3 style="margin:0; color: ${STUDY_SECTION_COLORS[ci % STUDY_SECTION_COLORS.length]};">${open ? '▾' : '▸'} ${escapeHtml(c.name)}</h3>
+      </div>
+      <div class="composer-work-list" style="${open ? '' : 'display:none;'}"></div>
+      <button type="button" class="btn-sm mt8 add-work-btn" style="${open ? '' : 'display:none;'}">＋ Add Work</button>
+    `;
+    section.querySelector('.study-section-head').addEventListener('click', () => {
+      studySectionsOpen[c.id] = !open;
+      renderStudy(el);
+    });
+    const workList = section.querySelector('.composer-work-list');
+    works.forEach((w, wi) => { if (w.composer === c.id) workList.appendChild(buildStudyWorkCard(w, wi, el)); });
+    section.querySelector('.add-work-btn').addEventListener('click', () => {
+      state.study.works.push({ id: state.study.nextWorkId++, composer: c.id, title: '', focus: '', status: STUDY_STATUS_OPTIONS[0], date: null, notes: '' });
+      saveState();
+      renderStudy(el);
+    });
+    sectionsWrap.appendChild(section);
+  });
+}
+
+// ============================================================
+// TAB 8 — 未来 Future
+// ============================================================
+let futureSectionsOpen = { career: true, hours: true, vr: true, blog: true, notes: true };
+
+function buildFutureSection(key, title, el, bodyBuilder){
+  const wrap = document.createElement('div');
+  wrap.className = 'future-section';
+  const open = futureSectionsOpen[key] !== false;
+  wrap.innerHTML = `
+    <div class="fs-head"><h3 style="margin:0;">${open ? '▾' : '▸'} ${escapeHtml(title)}</h3></div>
+    <div class="fs-body card mt8" style="${open ? '' : 'display:none;'}"></div>
+  `;
+  wrap.querySelector('.fs-head').addEventListener('click', () => {
+    futureSectionsOpen[key] = !open;
+    renderFuture(el);
+  });
+  if (open) bodyBuilder(wrap.querySelector('.fs-body'));
+  return wrap;
+}
+
+function renderFuture(el){
+  const future = state.future;
+  el.innerHTML = `
+    <h2 class="section-title">未来 Future</h2>
+    <div id="future-sections"></div>
+  `;
+  const wrap = el.querySelector('#future-sections');
+  const growTextareas = [];
+
+  // --- Career Exploration ---
+  wrap.appendChild(buildFutureSection('career', '🗺️ Career Exploration', el, (body) => {
+    body.innerHTML = `
+      <textarea id="career-notes" rows="4" placeholder="Freeform notes on career direction...">${escapeHtml(future.careerNotes)}</textarea>
+      <div id="explore-list" class="mt12"></div>
+      <button type="button" id="add-explore-btn" class="btn-sm mt8">＋ Add Item</button>
+    `;
+    const ta = body.querySelector('#career-notes');
+    growTextareas.push(ta);
+    ta.addEventListener('input', e => { future.careerNotes = e.target.value; autoGrow(ta); saveState(); });
+
+    const listEl = body.querySelector('#explore-list');
+    future.explore.forEach((item, ii) => {
+      const row = document.createElement('div');
+      row.className = 'explore-row';
+      row.innerHTML = `
+        <label class="cb"><input type="checkbox" class="explore-done-cb" ${item.done ? 'checked' : ''}><span class="cb-box"></span></label>
+        <input type="text" class="explore-text-input" value="${escapeHtml(item.text)}" placeholder="Idea to explore...">
+        <button type="button" class="btn-sm btn-danger explore-delete-btn" title="Delete">🗑</button>
+      `;
+      row.querySelector('.explore-done-cb').addEventListener('change', e => { item.done = e.target.checked; saveStateMarked(); renderFuture(el); });
+      row.querySelector('.explore-text-input').addEventListener('input', e => { item.text = e.target.value; saveState(); });
+      row.querySelector('.explore-delete-btn').addEventListener('click', () => {
+        future.explore.splice(ii, 1);
+        saveState();
+        renderFuture(el);
+      });
+      listEl.appendChild(row);
+    });
+    body.querySelector('#add-explore-btn').addEventListener('click', () => {
+      future.explore.push({ id: future.exploreNextId++, text: '', done: false });
+      saveState();
+      renderFuture(el);
+    });
+  }));
+
+  // --- Workday Hours Log ---
+  wrap.appendChild(buildFutureSection('hours', '🕐 Workday Hours Log', el, (body) => {
+    const total = futureTotalHours();
+    body.innerHTML = `
+      <p class="muted small">Log hours every week!</p>
+      <table class="hours-table">
+        <thead><tr><th>Wk</th><th>Period</th><th class="col-cb"></th><th>Hours</th><th>Notes</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="mt8 mono">Total: ${total} hours</div>
+    `;
+    const tbody = body.querySelector('tbody');
+    future.weeklyHours.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="mono">${row.week}</td>
+        <td>${escapeHtml(row.period)}</td>
+        <td class="col-cb"><label class="cb"><input type="checkbox" class="hours-done-cb" ${row.done ? 'checked' : ''}><span class="cb-box"></span></label></td>
+        <td><input type="number" class="hours-input" min="0" step="0.5" value="${row.hours === null || row.hours === undefined ? '' : row.hours}"></td>
+        <td><input type="text" class="hours-notes-input" value="${escapeHtml(row.notes)}"></td>
+      `;
+      tr.querySelector('.hours-done-cb').addEventListener('change', e => { row.done = e.target.checked; saveStateMarked(); });
+      tr.querySelector('.hours-input').addEventListener('input', e => {
+        row.hours = e.target.value === '' ? null : Number(e.target.value);
+        saveState();
+        renderFuture(el);
+      });
+      tr.querySelector('.hours-notes-input').addEventListener('input', e => { row.notes = e.target.value; saveState(); });
+      tbody.appendChild(tr);
+    });
+  }));
+
+  // --- VR & Amblyopia Research ---
+  wrap.appendChild(buildFutureSection('vr', '🔬 VR & Amblyopia Research', el, (body) => {
+    const statusOpts = VR_STATUS_OPTIONS.map(s =>
+      `<option value="${escapeHtml(s)}" ${s === future.vrStatus ? 'selected' : ''}>${escapeHtml(s)}</option>`
+    ).join('');
+    body.innerHTML = `
+      <div class="row"><span class="muted small">Status</span><select id="vr-status">${statusOpts}</select></div>
+      <div class="checklist-box mt12">
+        <label class="cb"><input type="checkbox" data-vk="lit" ${future.vrChecklist.lit ? 'checked' : ''}><span class="cb-box"></span> Background reading on amblyopia treatment</label>
+        <label class="cb"><input type="checkbox" data-vk="research" ${future.vrChecklist.research ? 'checked' : ''}><span class="cb-box"></span> Review VR therapy research</label>
+        <label class="cb"><input type="checkbox" data-vk="self" ${future.vrChecklist.self ? 'checked' : ''}><span class="cb-box"></span> Explore self-treatment approaches</label>
+        <label class="cb"><input type="checkbox" data-vk="consult" ${future.vrChecklist.consult ? 'checked' : ''}><span class="cb-box"></span> Consult with relevant people</label>
+      </div>
+      <textarea id="vr-notes" rows="3" class="mt12" placeholder="Notes...">${escapeHtml(future.vrNotes)}</textarea>
+    `;
+    body.querySelector('#vr-status').addEventListener('change', e => { future.vrStatus = e.target.value; saveState(); });
+    body.querySelectorAll('[data-vk]').forEach(cb => {
+      cb.addEventListener('change', e => { future.vrChecklist[e.target.dataset.vk] = e.target.checked; saveState(); });
+    });
+    body.querySelector('#vr-notes').addEventListener('input', e => { future.vrNotes = e.target.value; saveState(); });
+  }));
+
+  // --- Blog / Podcast ---
+  wrap.appendChild(buildFutureSection('blog', '🎙️ Blog / Podcast', el, (body) => {
+    const statusOpts = BLOG_STATUS_OPTIONS.map(s =>
+      `<option value="${escapeHtml(s)}" ${s === future.blogStatus ? 'selected' : ''}>${escapeHtml(s)}</option>`
+    ).join('');
+    body.innerHTML = `
+      <div class="row"><span class="muted small">Status</span><select id="blog-status">${statusOpts}</select></div>
+      <textarea id="blog-notes" rows="3" class="mt12" placeholder="Notes / ideas...">${escapeHtml(future.blogNotes)}</textarea>
+      <div class="mt16" style="font-weight:600;">Episodes</div>
+      <div id="episode-list" class="mt8"></div>
+      <button type="button" id="add-episode-btn" class="btn-sm mt8">＋ Add Episode</button>
+    `;
+    body.querySelector('#blog-status').addEventListener('change', e => { future.blogStatus = e.target.value; saveState(); });
+    const blogNotesTa = body.querySelector('#blog-notes');
+    growTextareas.push(blogNotesTa);
+    blogNotesTa.addEventListener('input', e => { future.blogNotes = e.target.value; autoGrow(blogNotesTa); saveState(); });
+
+    const episodeList = body.querySelector('#episode-list');
+    future.podcastEpisodes.forEach((ep, ei) => {
+      const card = document.createElement('div');
+      card.className = 'episode-card card mt8';
+      card.innerHTML = `
+        <div class="row" style="justify-content:space-between;">
+          <span class="mono muted small">Episode ${ei + 1}</span>
+          <button type="button" class="btn-sm btn-danger episode-delete-btn" title="Delete episode">🗑</button>
+        </div>
+        <input type="text" class="episode-title-input mt8" value="${escapeHtml(ep.title)}" placeholder="Episode topic / title...">
+        <textarea class="episode-notes-textarea mt8" rows="2" placeholder="Notes / outline...">${escapeHtml(ep.notes)}</textarea>
+      `;
+      const titleInput = card.querySelector('.episode-title-input');
+      const notesTa = card.querySelector('.episode-notes-textarea');
+      growTextareas.push(notesTa);
+      titleInput.addEventListener('input', e => { ep.title = e.target.value; saveState(); });
+      notesTa.addEventListener('input', e => { ep.notes = e.target.value; autoGrow(notesTa); saveState(); });
+      card.querySelector('.episode-delete-btn').addEventListener('click', () => {
+        future.podcastEpisodes.splice(ei, 1);
+        saveState();
+        renderFuture(el);
+      });
+      episodeList.appendChild(card);
+    });
+    body.querySelector('#add-episode-btn').addEventListener('click', () => {
+      future.podcastEpisodes.push({ id: future.podcastNextId++, title: '', notes: '' });
+      saveState();
+      renderFuture(el);
+    });
+  }));
+
+  // --- Open Notes ---
+  wrap.appendChild(buildFutureSection('notes', '📓 Open Notes', el, (body) => {
+    body.innerHTML = `<textarea id="open-notes" rows="6" placeholder="Anything on your mind...">${escapeHtml(future.openNotes)}</textarea>`;
+    const ta = body.querySelector('#open-notes');
+    growTextareas.push(ta);
+    ta.addEventListener('input', e => { future.openNotes = e.target.value; autoGrow(ta); saveState(); });
+  }));
+
+  requestAnimationFrame(() => growTextareas.forEach(ta => autoGrow(ta)));
+}
+
+// ============================================================
+// Header / Tab bar / dispatch / init
+// ============================================================
+const RENDERERS = [
+  renderOverview, renderEP, renderReading, renderWork, renderOrchestration,
+  renderPiano, renderComposition, renderStudy, renderFuture
+];
+
+function updateHeaderCenter(){
+  const center = document.getElementById('header-center');
+  if (!center) return;
+  if (!hasSummerStarted()) {
+    const until = getDaysUntilStart();
+    center.textContent = `Summer starts in ${until} day${until === 1 ? '' : 's'}  ·  Jun 8 – Sep 1, 2026`;
+  } else if (hasSummerEnded()) {
+    center.textContent = `Summer complete — ${SUMMER_TOTAL_DAYS} of ${SUMMER_TOTAL_DAYS} days`;
+  } else {
+    center.textContent = `Day ${getSummerDay()} of ${SUMMER_TOTAL_DAYS}  ·  ${getDaysRemaining()} days remaining`;
+  }
+}
+
+function renderTabBar(){
+  const bar = document.getElementById('tab-bar');
+  bar.innerHTML = '';
+  TAB_NAMES.forEach((name, idx) => {
+    const btn = document.createElement('button');
+    btn.dataset.tabIndex = String(idx);
+    btn.className = 'tab-btn' + (idx === state.activeTab ? ' active' : '');
+    btn.textContent = name;
+    btn.addEventListener('click', () => dispatch(idx));
+    bar.appendChild(btn);
+  });
+}
+
+function renderActiveTab(){
+  const content = document.getElementById('tab-content');
+  RENDERERS[state.activeTab](content);
+}
+
+function dispatch(tabIndex){
+  if (tabIndex < 0 || tabIndex >= RENDERERS.length) return;
+  syncWorkDraftFromDom(document, true);
+  const content = document.getElementById('tab-content');
+  if (tabIndex === state.activeTab) {
+    return;
+  }
+  content.classList.add('fading');
+  setTimeout(() => {
+    state.activeTab = tabIndex;
+    persistNow(false);
+    renderTabBar();
+    renderActiveTab();
+    content.classList.remove('fading');
+  }, 150);
+}
+
+function setupKeyboardShortcuts(){
+  document.addEventListener('keydown', (e) => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const num = parseInt(e.key, 10);
+    if (Number.isInteger(num) && num >= 1 && num <= TAB_NAMES.length) {
+      e.preventDefault();
+      dispatch(num - 1);
+    }
+  });
+}
+
+function setupPersistenceGuards(){
+  document.addEventListener('pointerdown', () => {
+    syncWorkDraftFromDom(document, true);
+  }, { capture: true });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      syncWorkDraftFromDom(document, true);
+    }
+  });
+  window.addEventListener('pagehide', () => {
+    syncWorkDraftFromDom(document, true);
+  });
+  window.addEventListener('beforeunload', () => {
+    syncWorkDraftFromDom(document, true);
+  });
+}
+
+function setupBackToTop(){
+  const btn = document.getElementById('back-to-top');
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('show', window.scrollY > 320);
+  });
+  btn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+function init(){
+  loadState();
+  updateHeaderCenter();
+  renderTabBar();
+  renderActiveTab();
+  setupKeyboardShortcuts();
+  setupPersistenceGuards();
+  setupBackToTop();
+  setInterval(updateHeaderCenter, 60 * 1000);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
 </body>
 </html>
