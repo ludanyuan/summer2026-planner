@@ -69,7 +69,15 @@ a { color: var(--accent); }
 }
 #app-header .header-left .subtitle { font-size: 13px; color: var(--muted); font-family: 'Courier New', monospace; }
 #app-header .header-center { font-family: 'Courier New', monospace; font-size: 15px; color: var(--text); white-space: nowrap; }
-#app-header .header-right { min-width: 80px; text-align: right; }
+#app-header .header-right { min-width: 80px; text-align: right; display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
+.io-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted); font-size: 13px; font-family: inherit;
+  padding: 6px 12px; border-radius: 7px; cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.io-btn:hover { border-color: var(--accent); color: var(--accent); }
 #saved-badge {
   display: inline-block;
   font-size: 14px;
@@ -448,6 +456,9 @@ table.hours-table input[type="text"] { width: 100%; }
   </div>
   <div class="header-center" id="header-center"></div>
   <div class="header-right">
+    <button id="export-btn" class="io-btn" type="button" title="Export all data as a JSON file">⭳ Export</button>
+    <button id="import-btn" class="io-btn" type="button" title="Import data from a JSON file">⭱ Import</button>
+    <input id="import-file-input" type="file" accept=".json,application/json" style="display:none;">
     <span id="saved-badge">saved ✓</span>
   </div>
 </header>
@@ -773,6 +784,79 @@ function persistNow(){
 
 const saveState = debounce(() => persistNow(), 300);
 const saveStateMarked = debounce(() => persistNow(), 300);
+
+// ---------- Export / Import ----------
+function showIoBadge(msg, isError){
+  const badge = document.getElementById('saved-badge');
+  if (!badge) return;
+  const prevText = badge.textContent;
+  const prevColor = badge.style.color;
+  badge.textContent = msg;
+  badge.style.color = isError ? '#f0a8a8' : '';
+  badge.classList.add('show');
+  clearTimeout(showIoBadge._t);
+  showIoBadge._t = setTimeout(() => {
+    badge.classList.remove('show');
+    setTimeout(() => { badge.textContent = prevText; badge.style.color = prevColor; }, 400);
+  }, 1800);
+}
+
+function exportData(){
+  syncWorkDraftFromDom(document, true);
+  persistNow();
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `summer2026-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showIoBadge('exported ✓', false);
+}
+
+function importDataFromFile(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    let imported;
+    try {
+      imported = JSON.parse(reader.result);
+    } catch (e) {
+      showIoBadge('import failed: bad JSON', true);
+      console.warn('Failed to parse imported file', e);
+      return;
+    }
+    if (!isPlainObject(imported)) {
+      showIoBadge('import failed: not an object', true);
+      return;
+    }
+    const ok = window.confirm('Import will overwrite your current data in this browser. Continue?');
+    if (!ok) return;
+    state = deepMerge(buildDefaults(), imported);
+    persistNow();
+    updateHeaderCenter();
+    renderTabBar();
+    renderActiveTab();
+    showIoBadge('imported ✓', false);
+  };
+  reader.onerror = () => showIoBadge('import failed: could not read file', true);
+  reader.readAsText(file);
+}
+
+function setupImportExport(){
+  const exportBtn = document.getElementById('export-btn');
+  const importBtn = document.getElementById('import-btn');
+  const fileInput = document.getElementById('import-file-input');
+  if (exportBtn) exportBtn.addEventListener('click', exportData);
+  if (importBtn) importBtn.addEventListener('click', () => fileInput.click());
+  if (fileInput) fileInput.addEventListener('change', () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (file) importDataFromFile(file);
+    fileInput.value = '';
+  });
+}
 
 // ---------- General helper utilities ----------
 function getSummerDay(){
@@ -2507,6 +2591,7 @@ function init(){
   setupKeyboardShortcuts();
   setupPersistenceGuards();
   setupBackToTop();
+  setupImportExport();
   setInterval(updateHeaderCenter, 60 * 1000);
 }
 
