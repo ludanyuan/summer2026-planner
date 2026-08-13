@@ -324,6 +324,9 @@ hr.sep { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
 }
 .week-head-bar .wk-label { font-family: 'Courier New', monospace; font-size: 14px; color: var(--accent); white-space: nowrap; }
+.week-head-bar .wk-date-edit { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.week-head-bar .week-date-input { width: auto; padding: 4px 6px; font-size: 13px; }
+.week-head-bar .wk-date-formatted { white-space: nowrap; }
 .week-head-bar input[type="text"] { flex: 1; min-width: 160px; }
 .week-table-wrap { border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; overflow-x: auto; background: var(--surface); }
 table.assign-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 760px; }
@@ -1682,9 +1685,9 @@ function renderWork(el){
 // TAB 4 — 管弦乐课 Orchestration
 // ============================================================
 function formatSatLabel(dateStr){
-  if (!dateStr) return '';
+  if (!dateStr) return 'No date set';
   const d = strToDate(dateStr);
-  return 'Sat ' + MONTH_NAMES[d.getMonth()] + ' ' + pad2(d.getDate()) + ', ' + d.getFullYear();
+  return WEEKDAY_NAMES[d.getDay()] + ' ' + MONTH_NAMES[d.getMonth()] + ' ' + pad2(d.getDate()) + ', ' + d.getFullYear();
 }
 
 function blankAssignment(){
@@ -1766,6 +1769,10 @@ function buildWeekBlock(week, label, rerender){
   wrap.innerHTML = `
     <div class="week-head-bar">
       <span class="wk-label">${escapeHtml(label)}</span>
+      <span class="wk-date-edit">
+        <input type="date" class="week-date-input" value="${week.date || ''}">
+        <span class="wk-date-formatted muted small">${formatSatLabel(week.date)}</span>
+      </span>
       <input type="text" class="week-topic-input" placeholder="Class topic / focus..." value="${escapeHtml(week.topic)}">
     </div>
     <div class="week-table-wrap"></div>
@@ -1773,6 +1780,13 @@ function buildWeekBlock(week, label, rerender){
       <button type="button" class="btn-sm add-assignment-btn">＋ Add Assignment</button>
     </div>
   `;
+  const dateInput = wrap.querySelector('.week-date-input');
+  const dateFormatted = wrap.querySelector('.wk-date-formatted');
+  dateInput.addEventListener('change', (e) => {
+    week.date = e.target.value;
+    dateFormatted.textContent = formatSatLabel(week.date);
+    saveState();
+  });
   wrap.querySelector('.week-topic-input').addEventListener('input', (e) => {
     week.topic = e.target.value;
     saveState();
@@ -1809,7 +1823,7 @@ function renderOrchestration(el){
   const weeksWrap = el.querySelector('#orch-weeks');
 
   orch.weeks.forEach((week, wi) => {
-    const label = `Week ${wi + 1}  ·  ${formatSatLabel(week.date)}`;
+    const label = `Week ${wi + 1}`;
     weeksWrap.appendChild(buildWeekBlock(week, label, rerender));
   });
   orch.extraWeeks.forEach((week, wi) => {
