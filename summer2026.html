@@ -1708,7 +1708,6 @@ function buildAssignmentTable(week, container, rerender){
   let dragSrcIndex = null;
   week.assignments.forEach((a, ai) => {
     const tr = document.createElement('tr');
-    tr.draggable = true;
     tr.dataset.index = String(ai);
     const statusOpts = ASSIGN_STATUS_OPTIONS.map(s =>
       `<option value="${escapeHtml(s)}" ${s === a.status ? 'selected' : ''}>${escapeHtml(s)}</option>`
@@ -1729,6 +1728,8 @@ function buildAssignmentTable(week, container, rerender){
       saveState();
       rerender();
     });
+    const dragHandle = tr.querySelector('.drag-handle');
+    dragHandle.addEventListener('mousedown', () => { tr.draggable = true; });
     tr.addEventListener('dragstart', e => {
       dragSrcIndex = ai;
       tr.classList.add('dragging');
@@ -1755,6 +1756,7 @@ function buildAssignmentTable(week, container, rerender){
     });
     tr.addEventListener('dragend', () => {
       dragSrcIndex = null;
+      tr.draggable = false;
       tbody.querySelectorAll('tr').forEach(row => row.classList.remove('dragging', 'drag-over'));
     });
     tbody.appendChild(tr);
